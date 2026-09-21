@@ -1,0 +1,62 @@
+{
+  "Ridge": {
+    "model_name": "Ridge Regression",
+    "mae_c": 17.6949,
+    "rmse_c": 24.5879,
+    "r2_score": 0.7096,
+    "p95_error_c": 47.593,
+    "max_error_c": 207.1178,
+    "median_error_c": 13.2364,
+    "train_time_sec": 0.011,
+    "infer_latency_ms": 0.0001,
+    "provides_analytical_uncertainty": false
+  },
+  "RandomForest": {
+    "model_name": "Random Forest",
+    "mae_c": 1.7401,
+    "rmse_c": 3.1172,
+    "r2_score": 0.9953,
+    "p95_error_c": 6.3335,
+    "max_error_c": 43.8161,
+    "median_error_c": 0.8278,
+    "train_time_sec": 2.488,
+    "infer_latency_ms": 0.0052,
+    "provides_analytical_uncertainty": false
+  },
+  "HistGradientBoosting": {
+    "model_name": "HistGradientBoosting",
+    "mae_c": 1.0828,
+    "rmse_c": 1.5791,
+    "r2_score": 0.9988,
+    "p95_error_c": 3.3903,
+    "max_error_c": 19.6149,
+    "median_error_c": 0.7154,
+    "train_time_sec": 0.829,
+    "infer_latency_ms": 0.0082,
+    "provides_analytical_uncertainty": false
+  },
+  "MLP": {
+    "model_name": "Multi-Layer Perceptron (MLP)",
+    "mae_c": 0.8432,
+    "rmse_c": 1.225,
+    "r2_score": 0.9993,
+    "p95_error_c": 2.1376,
+    "max_error_c": 30.4423,
+    "median_error_c": 0.6574,
+    "train_time_sec": 3.094,
+    "infer_latency_ms": 0.0005,
+    "provides_analytical_uncertainty": false
+  },
+  "GaussianProcess": {
+    "model_name": "Gaussian Process (GPR)",
+    "mae_c": 0.4253,
+    "rmse_c": 0.6777,
+    "r2_score": 0.9998,
+    "p95_error_c": 1.2068,
+    "max_error_c": 5.1692,
+    "median_error_c": 0.2914,
+    "train_time_sec": 5.84,
+    "infer_latency_ms": 0.0838,
+    "provides_analytical_uncertainty": true
+  }
+}

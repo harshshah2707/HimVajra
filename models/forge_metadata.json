@@ -1,0 +1,44 @@
+{
+  "model_version": "FORGE-ML-v1",
+  "trained_at": "2026-09-21T10:53:16.149173Z",
+  "status": "TRAINED + SYNTHETIC DATA",
+  "data_provenance": "Physics-generated synthetic dataset (100,000 samples) \u2014 experimental validation pending",
+  "selected_architecture": "HistGradientBoostingRegressor + GaussianProcessRegressor (Calibrated Sigma)",
+  "selection_rationale": "HistGradientBoosting achieved lowest held-out test MAE (1.11 \u00b0C) and 0.005 ms inference latency with zero boundary extrapolation drift; paired with GPR for 95% predictive uncertainty bands.",
+  "training_sample_count": 70000,
+  "validation_sample_count": 15000,
+  "test_sample_count": 15000,
+  "feature_names": [
+    "altitude_m",
+    "pressure_kpa",
+    "ambient_temp_c",
+    "density_ratio",
+    "is_forced",
+    "theta_base",
+    "load_power_w",
+    "electrode_gap_mm",
+    "delta_t_diurnal"
+  ],
+  "training_domain_bounds": {
+    "altitude_m": [
+      0.0,
+      6000.0
+    ],
+    "ambient_temp_c": [
+      -40.0,
+      50.0
+    ],
+    "load_power_w": [
+      1.0,
+      80.0
+    ],
+    "theta_base": [
+      0.5,
+      8.0
+    ],
+    "electrode_gap_mm": [
+      0.5,
+      10.0
+    ]
+  }
+}

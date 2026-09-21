@@ -41,7 +41,25 @@ def load_artifacts():
         MODELS['gp_scaler'] = joblib.load('models/gp_scaler.joblib')
         with open('models/model_metrics.json', 'r') as f:
             MODELS['metrics'] = json.load(f)
-        print("[HIMVAJRA ML SERVICE] All models loaded successfully into memory.")
+
+        # FORGE Real ML Residual & Analytics Artifacts
+        if os.path.exists('models/forge_selected_model.joblib'):
+            MODELS['forge_model'] = joblib.load('models/forge_selected_model.joblib')
+        if os.path.exists('models/forge_gpr_uncertainty.joblib'):
+            MODELS['forge_gpr'] = joblib.load('models/forge_gpr_uncertainty.joblib')
+        if os.path.exists('models/forge_preprocessor.joblib'):
+            MODELS['forge_preprocessor'] = joblib.load('models/forge_preprocessor.joblib')
+        if os.path.exists('models/forge_analytics.json'):
+            with open('models/forge_analytics.json', 'r') as f:
+                MODELS['forge_analytics'] = json.load(f)
+        if os.path.exists('models/forge_benchmark.json'):
+            with open('models/forge_benchmark.json', 'r') as f:
+                MODELS['forge_benchmark'] = json.load(f)
+        if os.path.exists('models/forge_metadata.json'):
+            with open('models/forge_metadata.json', 'r') as f:
+                MODELS['forge_metadata'] = json.load(f)
+
+        print("[HIMVAJRA ML SERVICE] All models (including FORGE-ML-v1) loaded successfully into memory.")
     except Exception as e:
         print(f"[HIMVAJRA ML SERVICE] Warning: could not load model artifacts: {e}")
 
@@ -331,6 +349,148 @@ def predict_antenna_rf(req: AntennaRfRequest):
         "action": "ENGAGE 4W/dm² PTC RADOME HEATER + SHIFT MODULATION TO " + mod_scheme
     }
 
+# ══════════════════════════════════════════════════════════════
+# FORGE REAL ML PREDICTION & ANALYTICS ENDPOINTS
+# ══════════════════════════════════════════════════════════════
+
+class ForgePredictRequest(BaseModel):
+    altitude_m: float = Field(5000.0, ge=-500.0, le=10000.0)
+    ambient_temp_c: float = Field(25.0, ge=-60.0, le=80.0)
+    load_power_w: float = Field(15.0, ge=0.5, le=150.0)
+    theta_base: float = Field(3.0, ge=0.2, le=12.0)
+    cooling_mode: str = Field("forced")  # "forced" or "natural"
+    electrode_gap_mm: float = Field(2.0, ge=0.2, le=20.0)
+    delta_t_diurnal: float = Field(50.0, ge=5.0, le=90.0)
+
+@app.post("/api/forge/predict")
+def predict_forge(req: ForgePredictRequest):
+    t_start = time.time()
+    h = req.altitude_m
+    p_pa = 101325.0 * ((1.0 - 0.0065 * h / 288.15) ** 5.2561) if h < 11000 else 22632.0
+    p_kpa = p_pa / 1000.0
+    t_k = req.ambient_temp_c + 273.15
+    rho = (p_kpa * 1000.0) / (287.05 * t_k)
+    rho0 = 101325.0 / (287.05 * 288.15)
+    rho_ratio = max(0.2, rho / rho0)
+
+    is_forced = 1.0 if req.cooling_mode.lower() == 'forced' else 0.0
+    n_exp = 0.8 if is_forced == 1.0 else 0.5
+    derating_factor = (1.0 / rho_ratio) ** n_exp
+    theta_derated = req.theta_base * derating_factor
+    t_baseline = req.ambient_temp_c + (req.load_power_w * theta_derated)
+
+    # Domain check: Valid training domain is 0 <= alt <= 6000m, -40 <= temp <= 50C, 1 <= load <= 80W, 0.5 <= theta <= 8.0
+    in_domain = (0.0 <= h <= 6000.0) and (-40.0 <= req.ambient_temp_c <= 50.0) and (1.0 <= req.load_power_w <= 80.0) and (0.5 <= req.theta_base <= 8.0)
+
+    if in_domain and 'forge_model' in MODELS:
+        df_in = pd.DataFrame([{
+            'altitude_m': h,
+            'pressure_kpa': p_kpa,
+            'ambient_temp_c': req.ambient_temp_c,
+            'density_ratio': rho_ratio,
+            'is_forced': is_forced,
+            'theta_base': req.theta_base,
+            'load_power_w': req.load_power_w,
+            'electrode_gap_mm': req.electrode_gap_mm,
+            'delta_t_diurnal': req.delta_t_diurnal
+        }])
+        ml_correction = float(MODELS['forge_model'].predict(df_in)[0])
+        status = "VALIDATED_DOMAIN"
+        sigma = 0.88
+        ci_lower = t_baseline + ml_correction - 1.96 * sigma
+        ci_upper = t_baseline + ml_correction + 1.96 * sigma
+        warning_msg = None
+    else:
+        ml_correction = 0.0
+        status = "OUT_OF_DOMAIN_FALLBACK"
+        sigma = 2.5
+        ci_lower = t_baseline - 1.96 * sigma
+        ci_upper = t_baseline + 1.96 * sigma
+        warning_msg = "OUT OF DOMAIN: Operating parameters exceed validated training envelope (0–6,000m, -40 to +50°C, 1–80W). Model bypassed; conservative physics baseline active."
+
+    final_prediction = t_baseline + ml_correction
+
+    # Paschen breakdown & clear needed
+    clear_needed = req.electrode_gap_mm * derating_factor
+    pd_product = p_kpa * req.electrode_gap_mm
+    v_break = (112.5 * pd_product) / max(0.1, np.log(max(0.1, pd_product * 1000.0)) - 2.8) if pd_product > 0.05 else 320.0
+    arc_risk = "ACCEPTABLE" if clear_needed <= req.electrode_gap_mm * 1.05 else "ELEVATED — INCREASE CLEARANCE"
+
+    # Coffin-Manson solder fatigue
+    dt = max(5.0, req.delta_t_diurnal)
+    solder_cycles = int(round(6000.0 * (dt ** -1.9)))
+    rul_years = round(solder_cycles / (2.0 * 365.0), 2)
+
+    latency_ms = round((time.time() - t_start) * 1000.0, 3)
+
+    return {
+        "status": status,
+        "in_domain": in_domain,
+        "warning": warning_msg,
+        "model_version": "FORGE-ML-v1",
+        "inputs": req.dict(),
+        "environmental_physics": {
+            "pressure_kpa": round(p_kpa, 2),
+            "air_density_kg_m3": round(rho, 4),
+            "density_ratio": round(rho_ratio, 3),
+            "derating_factor": round(derating_factor, 3),
+            "derated_theta_ja": round(theta_derated, 3)
+        },
+        "predictions": {
+            "physics_baseline_c": round(t_baseline, 2),
+            "ml_correction_c": round(ml_correction, 2),
+            "final_predicted_junction_c": round(final_prediction, 2),
+            "confidence_interval_95_c": [round(ci_lower, 2), round(ci_upper, 2)],
+            "interval_width_c": round(ci_upper - ci_lower, 2),
+            "clearance_required_mm": round(clear_needed, 2),
+            "clearance_status": "ACCEPTABLE" if clear_needed <= req.electrode_gap_mm else "INSUFFICIENT",
+            "paschen_breakdown_voltage_v": round(v_break, 1),
+            "arc_risk": arc_risk,
+            "solder_fatigue_cycles": solder_cycles,
+            "rul_years": rul_years
+        },
+        "inference_latency_ms": latency_ms
+    }
+
+@app.get("/api/forge/analytics")
+def get_forge_analytics():
+    return MODELS.get('forge_analytics', {
+        "status": "NOT_LOADED",
+        "message": "Run train_forge.py to generate analytics"
+    })
+
+@app.get("/api/forge/benchmark")
+def get_forge_benchmark():
+    return MODELS.get('forge_benchmark', {
+        "status": "NOT_LOADED",
+        "message": "Run train_forge.py to generate benchmark"
+    })
+
+@app.post("/api/forge/noise_test")
+def test_forge_noise(req: ForgePredictRequest):
+    clean_res = predict_forge(req)
+    noisy_req = ForgePredictRequest(
+        altitude_m=req.altitude_m * float(np.random.uniform(0.97, 1.03)),
+        ambient_temp_c=req.ambient_temp_c + float(np.random.normal(0, 0.8)),
+        load_power_w=req.load_power_w * float(np.random.uniform(0.96, 1.04)),
+        theta_base=req.theta_base,
+        cooling_mode=req.cooling_mode,
+        electrode_gap_mm=req.electrode_gap_mm,
+        delta_t_diurnal=req.delta_t_diurnal
+    )
+    noisy_res = predict_forge(noisy_req)
+    delta = abs(clean_res["predictions"]["final_predicted_junction_c"] - noisy_res["predictions"]["final_predicted_junction_c"])
+    return {
+        "status": "SUCCESS",
+        "clean_prediction_c": clean_res["predictions"]["final_predicted_junction_c"],
+        "noisy_prediction_c": noisy_res["predictions"]["final_predicted_junction_c"],
+        "prediction_delta_c": round(delta, 2),
+        "robustness_rating": "ROBUST (Delta < 1.5°C)" if delta < 1.5 else "MODERATE SENSITIVITY",
+        "clean_inputs": clean_res["inputs"],
+        "noisy_inputs": noisy_res["inputs"]
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
+

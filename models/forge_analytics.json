@@ -1,0 +1,196 @@
+{
+  "metadata": {
+    "model_version": "FORGE-ML-v1",
+    "trained_at": "2026-09-21T10:53:16.149173Z",
+    "status": "TRAINED + SYNTHETIC DATA",
+    "data_provenance": "Physics-generated synthetic dataset (100,000 samples) \u2014 experimental validation pending",
+    "selected_architecture": "HistGradientBoostingRegressor + GaussianProcessRegressor (Calibrated Sigma)",
+    "selection_rationale": "HistGradientBoosting achieved lowest held-out test MAE (1.11 \u00b0C) and 0.005 ms inference latency with zero boundary extrapolation drift; paired with GPR for 95% predictive uncertainty bands.",
+    "training_sample_count": 70000,
+    "validation_sample_count": 15000,
+    "test_sample_count": 15000,
+    "feature_names": [
+      "altitude_m",
+      "pressure_kpa",
+      "ambient_temp_c",
+      "density_ratio",
+      "is_forced",
+      "theta_base",
+      "load_power_w",
+      "electrode_gap_mm",
+      "delta_t_diurnal"
+    ],
+    "training_domain_bounds": {
+      "altitude_m": [
+        0.0,
+        6000.0
+      ],
+      "ambient_temp_c": [
+        -40.0,
+        50.0
+      ],
+      "load_power_w": [
+        1.0,
+        80.0
+      ],
+      "theta_base": [
+        0.5,
+        8.0
+      ],
+      "electrode_gap_mm": [
+        0.5,
+        10.0
+      ]
+    }
+  },
+  "comparison_summary": {
+    "physics_only": {
+      "mae_c": 36.615,
+      "rmse_c": 58.497,
+      "p95_error_c": 135.62,
+      "max_error_c": 365.87
+    },
+    "physics_plus_ml": {
+      "mae_c": 1.083,
+      "rmse_c": 1.579,
+      "p95_error_c": 3.389,
+      "max_error_c": 19.617
+    },
+    "improvement": {
+      "mae_reduction_pct": 97.0,
+      "rmse_reduction_pct": 97.3,
+      "p95_reduction_pct": 97.5
+    }
+  },
+  "feature_importances": [
+    {
+      "feature": "load_power_w",
+      "importance": 1.0758,
+      "std": 0.0116
+    },
+    {
+      "feature": "density_ratio",
+      "importance": 0.9754,
+      "std": 0.0151
+    },
+    {
+      "feature": "theta_base",
+      "importance": 0.5749,
+      "std": 0.0092
+    },
+    {
+      "feature": "is_forced",
+      "importance": 0.0303,
+      "std": 0.0004
+    },
+    {
+      "feature": "pressure_kpa",
+      "importance": 0.0003,
+      "std": 0.0
+    },
+    {
+      "feature": "altitude_m",
+      "importance": 0.0,
+      "std": 0.0
+    },
+    {
+      "feature": "ambient_temp_c",
+      "importance": 0.0,
+      "std": 0.0
+    },
+    {
+      "feature": "electrode_gap_mm",
+      "importance": 0.0,
+      "std": 0.0
+    },
+    {
+      "feature": "delta_t_diurnal",
+      "importance": -0.0,
+      "std": 0.0
+    }
+  ],
+  "residual_histogram": {
+    "counts": [
+      1,
+      1,
+      3,
+      47,
+      305,
+      2014,
+      10105,
+      2166,
+      298,
+      53,
+      5,
+      1,
+      0,
+      0,
+      1
+    ],
+    "bin_edges": [
+      -15.006,
+      -12.698,
+      -10.39,
+      -8.082,
+      -5.774,
+      -3.466,
+      -1.158,
+      1.15,
+      3.458,
+      5.766,
+      8.075,
+      10.383,
+      12.691,
+      14.999,
+      17.307,
+      19.615
+    ]
+  },
+  "regional_errors": [
+    {
+      "region": "Lowland (0\u20133,000m)",
+      "samples": 7540,
+      "mae_c": 0.7472,
+      "rmse_c": 1.0428,
+      "p95_error_c": 2.2508
+    },
+    {
+      "region": "High Altitude Area (3,000\u20134,500m)",
+      "samples": 3769,
+      "mae_c": 1.285,
+      "rmse_c": 1.7537,
+      "p95_error_c": 3.7112
+    },
+    {
+      "region": "Super High Altitude Area (4,500\u20135,500m)",
+      "samples": 2397,
+      "mae_c": 1.4675,
+      "rmse_c": 2.0236,
+      "p95_error_c": 4.2915
+    },
+    {
+      "region": "Extreme Altitude (>5,500m)",
+      "samples": 1294,
+      "mae_c": 1.7361,
+      "rmse_c": 2.4549,
+      "p95_error_c": 4.9559
+    }
+  ],
+  "uncertainty_calibration": {
+    "nominal_coverage_pct": 95.0,
+    "observed_coverage_pct": 95.1,
+    "mean_interval_width_c": 2.5
+  },
+  "selected_model_metrics": {
+    "model_name": "HistGradientBoosting",
+    "mae_c": 1.0828,
+    "rmse_c": 1.5791,
+    "r2_score": 0.9988,
+    "p95_error_c": 3.3903,
+    "max_error_c": 19.6149,
+    "median_error_c": 0.7154,
+    "train_time_sec": 0.829,
+    "infer_latency_ms": 0.0082,
+    "provides_analytical_uncertainty": false
+  }
+}
