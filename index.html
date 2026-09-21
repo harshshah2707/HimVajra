@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HIMVAJRA — High-Altitude Reliability Platform</title>
+<meta name="description" content="Physics-driven prediction · measured validation · autonomous protection | SIH 2026 #26049 DRDO"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ═══════════════════════ APP SHELL ═══════════════════════ -->
+<div class="app-shell">
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="header-mountain" aria-hidden="true">
+        <svg width="48" height="32" viewBox="0 0 48 32" fill="none">
+          <path d="M0 32 L16 8 L24 18 L32 4 L48 32Z" fill="rgba(255,255,255,0.08)"/>
+          <path d="M22 32 L32 4 L48 32Z" fill="rgba(255,255,255,0.05)"/>
+          <line x1="32" y1="4" x2="38" y2="12" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+        </svg>
+      </div>
+      <div class="header-brand">
+        <div class="header-title">HIGH-ALTITUDE RELIABILITY PLATFORM</div>
+        <div class="header-subtitle">Physics-driven prediction · measured validation · autonomous protection · SIH #26049 DRDO</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-status-group">
+        <div class="hstat">
+          <div class="hstat-label">SYSTEM</div>
+          <div class="hstat-val"><span class="dot dot-green"></span>ONLINE</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-label">MODE</div>
+          <div class="hstat-val" id="h-mode">SIMULATION</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-label">DATA</div>
+          <div class="hstat-val">LOCAL / AIR-GAPPED</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-label">SYNC</div>
+          <div class="hstat-val mono" id="h-sync">--:--:--</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-label">ML ENGINE</div>
+          <div class="hstat-val mono" id="h-ml-status"><span class="dot dot-green"></span>LIVE :8000</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-label">GUARD</div>
+          <div class="hstat-val guard-state-badge" id="h-guard-state">NOMINAL</div>
+        </div>
+      </div>
+      <button class="demo-btn" id="demo-mode-btn" onclick="startDemoMode()">▶ DEMO MODE</button>
+    </div>
+  </header>
+
+  <!-- ═══ BODY ═══ -->
+  <div class="app-body">
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <nav class="sidebar">
+      <div class="nav-group">
+        <div class="nav-group-label">MONITORING</div>
+        <a class="nav-item active" data-page="overview" onclick="navigate('overview')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>
+          Overview
+        </a>
+        <a class="nav-item" data-page="telemetry" onclick="navigate('telemetry')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><polyline points="2,15 6,8 10,12 14,5 18,9"/></svg>
+          Telemetry
+        </a>
+        <a class="nav-item" data-page="fleet" onclick="navigate('fleet')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><path d="M10 3 Q13 7 13 10 Q13 13 10 17 Q7 13 7 10 Q7 7 10 3Z"/><line x1="3" y1="10" x2="17" y2="10"/></svg>
+          Fleet
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">ENGINEERING</div>
+        <a class="nav-item" data-page="simulation" onclick="navigate('simulation')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><polyline points="10,6 10,10 13,13"/><line x1="3" y1="10" x2="4.5" y2="10"/><line x1="15.5" y1="10" x2="17" y2="10"/></svg>
+          Simulation
+        </a>
+        <a class="nav-item" data-page="ladakh-ml" onclick="navigate('ladakh-ml')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><polygon points="10,2 18,18 2,18"/><circle cx="10" cy="11" r="2"/></svg>
+          Ladakh ML Mode
+        </a>
+        <a class="nav-item" data-page="drone-lab" onclick="navigate('drone-lab')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><line x1="3" y1="10" x2="17" y2="10"/><line x1="10" y1="3" x2="10" y2="17"/><circle cx="6" cy="6" r="2"/><circle cx="14" cy="6" r="2"/><circle cx="6" cy="14" r="2"/><circle cx="14" cy="14" r="2"/></svg>
+          Drone Flight Lab
+        </a>
+        <a class="nav-item" data-page="rad-comms" onclick="navigate('rad-comms')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><circle cx="10" cy="10" r="3"/><path d="M4 10 A6 6 0 0 1 16 10 M2 10 A8 8 0 0 1 18 10"/></svg>
+          Radiation & Comms
+        </a>
+        <a class="nav-item" data-page="modifications" onclick="navigate('modifications')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><rect x="3" y="3" width="14" height="14" rx="2"/><polyline points="7,10 9,12 13,8"/></svg>
+          DRDO Retrofit Matrix
+        </a>
+        <a class="nav-item" data-page="forge" onclick="navigate('forge')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><polygon points="10,2 18,18 2,18"/><line x1="10" y1="8" x2="10" y2="12"/><circle cx="10" cy="15" r="1"/></svg>
+          FORGE
+        </a>
+        <a class="nav-item" data-page="guard" onclick="navigate('guard')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><path d="M10 2 L17 5 L17 11 Q17 16 10 18 Q3 16 3 11 L3 5 Z"/></svg>
+          GUARD
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">OPERATIONS</div>
+        <a class="nav-item" data-page="maintenance" onclick="navigate('maintenance')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><circle cx="10" cy="10" r="3"/><path d="M10 2v3M10 15v3M2 10h3M15 10h3M4.2 4.2l2.1 2.1M13.7 13.7l2.1 2.1M4.2 15.8l2.1-2.1M13.7 6.3l2.1-2.1"/></svg>
+          Maintenance
+        </a>
+        <a class="nav-item" data-page="reports" onclick="navigate('reports')">
+          <svg class="nav-icon" viewBox="0 0 20 20"><rect x="4" y="2" width="12" height="16" rx="1"/><line x1="7" y1="7" x2="13" y2="7"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="7" y1="13" x2="11" y2="13"/></svg>
+          Reports
+        </a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sf-item">
+          <span class="dot" id="sf-network-dot"></span>
+          <span id="sf-network-label">NETWORK</span>
+        </div>
+        <div class="sf-item mono">
+          BUFFER: <span id="sf-buffer">0</span> rec
+        </div>
+        <button class="sf-btn" id="network-toggle-btn" onclick="toggleNetwork()">DISABLE NETWORK</button>
+      </div>
+    </nav>
+
+    <!-- ═══ MAIN WORKSPACE ═══ -->
+    <main class="workspace">
+
+      <!-- ══════════ PAGE: OVERVIEW ══════════ -->
+      <div class="page" id="page-overview">
+        <div class="page-header">
+          <div>
+            <div class="page-title">System Overview</div>
+            <div class="page-sub">Real-time platform status · environment · electronics · GUARD state</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="data-badge">SIMULATION</div>
+            <div class="data-badge orange-badge">CALCULATED</div>
+          </div>
+        </div>
+
+        <!-- Environment + Electronics KPI row -->
+        <div class="kpi-row">
+          <div class="kpi-group">
+            <div class="kpi-group-label">ENVIRONMENT</div>
+            <div class="kpi-card">
+              <div class="kpi-label">ALTITUDE</div>
+              <div class="kpi-value mono" id="ov-altitude">5,500</div>
+              <div class="kpi-unit">m</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">PRESSURE</div>
+              <div class="kpi-value mono orange" id="ov-pressure">50.5</div>
+              <div class="kpi-unit">kPa</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">AIR DENSITY</div>
+              <div class="kpi-value mono orange" id="ov-density">0.50</div>
+              <div class="kpi-unit">ρ/ρ₀</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">AMBIENT</div>
+              <div class="kpi-value mono" id="ov-ambient">25.0</div>
+              <div class="kpi-unit">°C</div>
+            </div>
+          </div>
+          <div class="kpi-group">
+            <div class="kpi-group-label">ELECTRONICS</div>
+            <div class="kpi-card orange-kpi">
+              <div class="kpi-label">HOTSPOT</div>
+              <div class="kpi-value mono orange" id="ov-hotspot">63.0</div>
+              <div class="kpi-unit">°C</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">POWER</div>
+              <div class="kpi-value mono" id="ov-power">15.0</div>
+              <div class="kpi-unit">W</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">VOLTAGE</div>
+              <div class="kpi-value mono" id="ov-voltage">24.1</div>
+              <div class="kpi-unit">V</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">CURRENT</div>
+              <div class="kpi-value mono" id="ov-current">0.62</div>
+              <div class="kpi-unit">A</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main content row -->
+        <div class="ov-main-row">
+          <!-- GUARD state big -->
+          <div class="panel guard-state-panel">
+            <div class="panel-header">GUARD STATE</div>
+            <div class="guard-big-state" id="ov-guard-big">
+              <div class="gbs-name" id="ov-gbs-name">NOMINAL</div>
+              <div class="gbs-desc" id="ov-gbs-desc">All margins &gt; 20%. Passive monitoring.</div>
+            </div>
+            <div class="state-ladder">
+              <div class="sl-step" id="sl-nominal"><span class="sl-dot"></span>NOMINAL</div>
+              <div class="sl-arrow">↓</div>
+              <div class="sl-step" id="sl-derated"><span class="sl-dot"></span>DERATED</div>
+              <div class="sl-arrow">↓</div>
+              <div class="sl-step" id="sl-protect"><span class="sl-dot"></span>PROTECT</div>
+              <div class="sl-arrow">↓</div>
+              <div class="sl-step" id="sl-lockout"><span class="sl-dot"></span>LOCKOUT</div>
+            </div>
+            <div class="actuator-mini-grid">
+              <div class="act-mini" id="am-fan"><span>FAN</span><span class="am-val" id="am-fan-val">30%</span></div>
+              <div class="act-mini" id="am-heater"><span>HEATER</span><span class="am-val" id="am-heater-val">OFF</span></div>
+              <div class="act-mini" id="am-charge"><span>CHARGE</span><span class="am-val" id="am-charge-val">ON</span></div>
+              <div class="act-mini" id="am-load"><span>LOAD</span><span class="am-val" id="am-load-val">FULL</span></div>
+            </div>
+          </div>
+
+          <!-- Overview chart -->
+          <div class="panel chart-panel">
+            <div class="panel-header">
+              THERMAL PROFILE — ALTITUDE vs HOTSPOT TEMPERATURE
+              <span class="panel-badge orange-badge">CALCULATED</span>
+            </div>
+            <canvas id="ov-thermal-chart" height="200"></canvas>
+          </div>
+
+          <!-- Physics model status -->
+          <div class="panel physics-panel">
+            <div class="panel-header">PHYSICS MODEL STATUS</div>
+            <div class="physics-checklist">
+              <div class="phys-item active"><span class="phys-check">✓</span><span class="phys-name">ISA Atmosphere</span><span class="phys-status">ACTIVE</span></div>
+              <div class="phys-item active"><span class="phys-check">✓</span><span class="phys-name">Air Density ρ=P/RT</span><span class="phys-status">ACTIVE</span></div>
+              <div class="phys-item active"><span class="phys-check">✓</span><span class="phys-name">Convection h∝ρⁿ</span><span class="phys-status">ACTIVE</span></div>
+              <div class="phys-item active"><span class="phys-check">✓</span><span class="phys-name">Thermal RC Model</span><span class="phys-status">ACTIVE</span></div>
+              <div class="phys-item active"><span class="phys-check">✓</span><span class="phys-name">Battery ECM</span><span class="phys-status">ACTIVE</span></div>
+              <div class="phys-item active"><span class="phys-check">✓</span><span class="phys-name">Paschen Breakdown</span><span class="phys-status">ACTIVE</span></div>
+              <div class="phys-item active"><span class="phys-check">✓</span><span class="phys-name">Coffin–Manson</span><span class="phys-status">ACTIVE</span></div>
+              <div class="phys-item warning"><span class="phys-check">~</span><span class="phys-name">GP Residual ML</span><span class="phys-status orange">DEMO / NOT TRAINED</span></div>
+              <div class="phys-item warning"><span class="phys-check">~</span><span class="phys-name">Hardware Sensors</span><span class="phys-status orange">HARDWARE OFFLINE</span></div>
+              <div class="phys-item warning"><span class="phys-check">~</span><span class="phys-name">Real Telemetry</span><span class="phys-status orange">SYNTHETIC DATA</span></div>
+            </div>
+            <div class="phys-eq-strip">
+              <div class="phys-eq-label">ACTIVE EQUATIONS</div>
+              <div class="phys-eq mono">ρ = P / (R · T)</div>
+              <div class="phys-eq mono">h ∝ ρ<sup>0.8</sup> forced  |  h ∝ ρ<sup>0.5</sup> natural</div>
+              <div class="phys-eq mono">θ<sub>sa</sub> = θ<sub>base</sub> · (ρ₀/ρ)<sup>0.8</sup></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event log -->
+        <div class="panel event-log-panel">
+          <div class="panel-header">
+            SYSTEM EVENT LOG
+            <span class="panel-badge">HASH-CHAINED AUDIT</span>
+          </div>
+          <div class="event-log" id="ov-event-log">
+            <!-- populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: SIMULATION ══════════ -->
+      <div class="page hidden" id="page-simulation">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Live Environment Simulation</div>
+            <div class="page-sub">Adjust parameters · observe real-time physics · all outputs calculated from model</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="data-badge orange-badge">ALL VALUES CALCULATED</div>
+            <div class="data-badge">SIMULATION</div>
+          </div>
+        </div>
+
+        <div class="sim-layout">
+          <!-- Controls panel -->
+          <div class="panel sim-controls">
+            <div class="panel-header">SIMULATION PARAMETERS</div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-label">ALTITUDE</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="sim-alt" min="0" max="6000" value="5500" step="100" oninput="onSimChange()"/>
+                <div class="ctrl-readout">
+                  <span class="mono" id="sim-alt-v">5,500</span> <span class="ctrl-unit">m</span>
+                </div>
+              </div>
+              <div class="ctrl-derived">
+                <span class="ctrl-derived-label">Pressure:</span>
+                <span class="mono orange" id="sim-press-d">50.5 kPa</span>
+              </div>
+              <div class="ctrl-derived">
+                <span class="ctrl-derived-label">Density ratio:</span>
+                <span class="mono orange" id="sim-dens-d">0.50 ρ₀</span>
+              </div>
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-label">AMBIENT TEMPERATURE</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="sim-temp" min="-40" max="80" value="25" step="1" oninput="onSimChange()"/>
+                <div class="ctrl-readout">
+                  <span class="mono" id="sim-temp-v">25</span> <span class="ctrl-unit">°C</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-label">POWER DISSIPATION</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="sim-power" min="1" max="50" value="15" step="0.5" oninput="onSimChange()"/>
+                <div class="ctrl-readout">
+                  <span class="mono" id="sim-power-v">15.0</span> <span class="ctrl-unit">W</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-label">θ<sub>SA</sub> BASE (sea level)</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="sim-theta" min="0.5" max="20" value="3.0" step="0.1" oninput="onSimChange()"/>
+                <div class="ctrl-readout">
+                  <span class="mono" id="sim-theta-v">3.0</span> <span class="ctrl-unit">°C/W</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-label">COOLING MODE</div>
+              <div class="toggle-group">
+                <button class="toggle-btn active" id="cool-forced" onclick="setCooling('forced')">FORCED</button>
+                <button class="toggle-btn" id="cool-natural" onclick="setCooling('natural')">NATURAL</button>
+              </div>
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-label">BATTERY TEMPERATURE</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="sim-batt-temp" min="-35" max="45" value="15" step="1" oninput="onSimChange()"/>
+                <div class="ctrl-readout">
+                  <span class="mono" id="sim-batt-temp-v">15</span> <span class="ctrl-unit">°C</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-label">BATTERY SOH</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="sim-soh" min="50" max="100" value="90" step="1" oninput="onSimChange()"/>
+                <div class="ctrl-readout">
+                  <span class="mono" id="sim-soh-v">90</span> <span class="ctrl-unit">%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Calculated results block -->
+            <div class="calc-results">
+              <div class="calc-results-header">CALCULATED OUTPUTS</div>
+              <div class="calc-row"><span class="calc-label">Thermal Resistance</span><span class="mono orange" id="calc-theta-alt">—</span></div>
+              <div class="calc-row"><span class="calc-label">Hotspot Temperature</span><span class="mono orange" id="calc-hotspot">—</span></div>
+              <div class="calc-row"><span class="calc-label">Thermal Margin</span><span class="mono" id="calc-margin">—</span></div>
+              <div class="calc-row"><span class="calc-label">Derating Factor</span><span class="mono orange" id="calc-derate">—</span></div>
+              <div class="calc-row"><span class="calc-label">Arc Risk (2mm gap)</span><span class="mono" id="calc-arc">—</span></div>
+              <div class="calc-row"><span class="calc-label">Batt. Usable Cap.</span><span class="mono" id="calc-bat-cap">—</span></div>
+              <div class="calc-row"><span class="calc-label">Batt. R_int</span><span class="mono" id="calc-rint">—</span></div>
+              <div class="calc-row"><span class="calc-label">GUARD State</span><span class="mono" id="calc-guard">—</span></div>
+            </div>
+          </div>
+
+          <!-- Charts + Table -->
+          <div class="sim-right">
+            <!-- Main thermal chart -->
+            <div class="panel">
+              <div class="panel-header">
+                HOTSPOT TEMPERATURE vs ALTITUDE
+                <span class="panel-badge orange-badge">CALCULATED — NOT MEASURED</span>
+              </div>
+              <canvas id="sim-thermal-chart" height="200"></canvas>
+            </div>
+
+            <!-- Thermal penalty table -->
+            <div class="panel">
+              <div class="panel-header">THERMAL RESISTANCE PENALTY TABLE</div>
+              <table class="eng-table" id="sim-penalty-table">
+                <thead>
+                  <tr>
+                    <th>Altitude</th>
+                    <th>P (kPa)</th>
+                    <th>ρ/ρ₀</th>
+                    <th>θ<sub>sa</sub> Natural</th>
+                    <th>θ<sub>sa</sub> Forced</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-alt="0"><td>Sea level</td><td class="mono">101.3</td><td class="mono">1.00</td><td class="mono">—</td><td class="mono">—</td><td><span class="badge-ok">BASELINE</span></td></tr>
+                  <tr data-alt="3000"><td>3,000 m</td><td class="mono">70.1</td><td class="mono">0.69</td><td class="mono orange">+20%</td><td class="mono orange">+33%</td><td></td></tr>
+                  <tr data-alt="4500"><td>4,500 m</td><td class="mono">57.7</td><td class="mono">0.57</td><td class="mono orange">+32%</td><td class="mono orange">+56%</td><td></td></tr>
+                  <tr data-alt="5500"><td>5,500 m</td><td class="mono">50.5</td><td class="mono">0.50</td><td class="mono orange">+41%</td><td class="mono orange">+74%</td><td></td></tr>
+                </tbody>
+              </table>
+              <div class="table-caption">CALCULATED — NOT MEASURED. Based on ISA standard atmosphere and Nusselt correlations.</div>
+            </div>
+
+            <!-- Worked example -->
+            <div class="panel worked-example">
+              <div class="panel-header">WORKED EXAMPLE — SIMULATION / CALCULATED</div>
+              <div class="worked-layout">
+                <div class="worked-input-block">
+                  <div class="we-row"><span class="we-label">Power dissipation</span><span class="mono orange" id="we-power">15 W</span></div>
+                  <div class="we-row"><span class="we-label">Sea-level θ<sub>sa</sub></span><span class="mono" id="we-theta">3.0 °C/W</span></div>
+                  <div class="we-row"><span class="we-label">Altitude</span><span class="mono" id="we-alt">5,500 m</span></div>
+                  <div class="we-row"><span class="we-label">Cooling mode</span><span class="mono" id="we-cool">FORCED</span></div>
+                  <div class="we-row"><span class="we-label">Ambient temperature</span><span class="mono" id="we-amb">25 °C</span></div>
+                </div>
+                <div class="worked-arrow-block">
+                  <div class="wab-step sea-level">
+                    <div class="wab-val mono" id="we-sl-hotspot">70.0 °C</div>
+                    <div class="wab-label">Sea-level hotspot</div>
+                  </div>
+                  <div class="wab-arrow">↓ ALTITUDE PENALTY +<span class="mono orange" id="we-penalty">18.0°C</span></div>
+                  <div class="wab-step altitude">
+                    <div class="wab-val mono orange" id="we-alt-hotspot">88.0 °C</div>
+                    <div class="wab-label">Altitude hotspot</div>
+                  </div>
+                </div>
+              </div>
+              <div class="worked-caption">
+                Same ambient temperature. Same power. Reduced convective cooling.<br/>
+                <span class="orange">SIMULATION / CALCULATED — not validated against hardware measurement</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: FORGE ══════════ -->
+      <div class="page hidden" id="page-forge">
+        <div class="page-header">
+          <div>
+            <div class="page-title">FORGE — Failure-Physics Prediction Engine</div>
+            <div class="page-sub">Physics-based derating · prediction bands · hardening BOM · RUL estimation</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="data-badge">PHYSICS BASELINE</div>
+            <div class="data-badge orange-badge" id="fg-ml-status"><span class="dot dot-green"></span>ML: LIVE (:8000)</div>
+          </div>
+        </div>
+
+        <div class="forge-layout">
+          <div class="panel forge-inputs">
+            <div class="panel-header">COMPONENT PROFILE</div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">COMPONENT CLASS</div>
+              <select class="eng-select" id="fg-comp" onchange="runForge()">
+                <option value="cpu">Processor / SoC (edge compute)</option>
+                <option value="psu">Power Supply Unit</option>
+                <option value="cap">Electrolytic Capacitor bank</option>
+                <option value="motor">Motor driver / ESC</option>
+                <option value="battery">Li-ion battery pack</option>
+                <option value="bts">Base station electronics</option>
+              </select>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">θ<sub>JA</sub> JUNCTION-TO-AMBIENT (°C/W)</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="fg-theta" min="0.5" max="30" value="5" step="0.1" oninput="runForge()"/>
+                <div class="ctrl-readout"><span class="mono" id="fg-theta-v">5.0</span> °C/W</div>
+              </div>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">POWER DISSIPATION (W)</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="fg-power" min="1" max="100" value="15" step="0.5" oninput="runForge()"/>
+                <div class="ctrl-readout"><span class="mono" id="fg-power-v">15.0</span> W</div>
+              </div>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">DEPLOYMENT ALTITUDE (m)</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="fg-alt" min="3000" max="6000" value="5000" step="100" oninput="runForge()"/>
+                <div class="ctrl-readout"><span class="mono" id="fg-alt-v">5,000</span> m</div>
+              </div>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">DIURNAL ΔT (°C/cycle)</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="fg-dt" min="5" max="80" value="50" step="1" oninput="runForge()"/>
+                <div class="ctrl-readout"><span class="mono" id="fg-dt-v">50</span> °C</div>
+              </div>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">CLEARANCE GAP (mm)</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="fg-gap" min="0.5" max="10" value="2" step="0.1" oninput="runForge()"/>
+                <div class="ctrl-readout"><span class="mono" id="fg-gap-v">2.0</span> mm</div>
+              </div>
+            </div>
+            <button class="eng-btn-primary" onclick="runForge()">⚙ GENERATE DERATING REPORT</button>
+
+            <!-- Pipeline visualization -->
+            <div class="forge-pipeline">
+              <div class="pipe-step active" id="pipe-inputs"><span class="pipe-dot"></span>MEASURED INPUTS</div>
+              <div class="pipe-arrow">↓</div>
+              <div class="pipe-step active" id="pipe-thermal"><span class="pipe-dot"></span>THERMAL RC NETWORK</div>
+              <div class="pipe-arrow">↓</div>
+              <div class="pipe-step active" id="pipe-paschen"><span class="pipe-dot"></span>PASCHEN EVALUATION</div>
+              <div class="pipe-arrow">↓</div>
+              <div class="pipe-step active" id="pipe-coffin"><span class="pipe-dot"></span>COFFIN–MANSON FATIGUE</div>
+              <div class="pipe-arrow">↓</div>
+              <div class="pipe-step active" id="pipe-battery"><span class="pipe-dot"></span>BATTERY ECM</div>
+              <div class="pipe-arrow">↓</div>
+              <div class="pipe-step demo" id="pipe-gp"><span class="pipe-dot orange-dot"></span>GP RESIDUAL CORRECTION</div>
+              <div class="pipe-arrow">↓</div>
+              <div class="pipe-step active" id="pipe-output"><span class="pipe-dot"></span>PREDICTION BAND</div>
+            </div>
+            <div class="pipe-note">ML RESIDUAL: DEMO / NOT TRAINED — physics baseline only</div>
+          </div>
+
+          <div class="forge-outputs">
+            <!-- Derating report -->
+            <div class="panel forge-report" id="forge-report-panel">
+              <div class="panel-header">
+                DERATING REPORT
+                <span class="panel-badge" id="forge-domain-badge">IN-DOMAIN</span>
+              </div>
+              <div class="report-grid">
+                <div class="rep-item"><div class="rep-label">Derated θ<sub>JA</sub></div><div class="rep-val mono orange" id="fr-theta">— °C/W</div><div class="rep-band" id="fr-theta-band">± —</div></div>
+                <div class="rep-item"><div class="rep-label">Predicted T<sub>junction</sub></div><div class="rep-val mono orange" id="fr-tj">— °C</div><div class="rep-band" id="fr-tj-band">± —</div></div>
+                <div class="rep-item"><div class="rep-label">Clearance Required</div><div class="rep-val mono" id="fr-clear">— mm</div><div class="rep-band" id="fr-clear-stat"></div></div>
+                <div class="rep-item"><div class="rep-label">Arc Risk</div><div class="rep-val mono" id="fr-arc">—</div><div class="rep-band"></div></div>
+                <div class="rep-item"><div class="rep-label">Solder Cycles (Coffin-Manson)</div><div class="rep-val mono" id="fr-cycles">—</div><div class="rep-band"></div></div>
+                <div class="rep-item"><div class="rep-label">RUL (2 cycles/day)</div><div class="rep-val mono orange" id="fr-rul">— years</div><div class="rep-band"></div></div>
+              </div>
+              <div class="forge-confidence">
+                <div class="fc-label">MODEL CONFIDENCE</div>
+                <div class="fc-bar-wrap"><div class="fc-bar" id="fc-bar"></div></div>
+                <div class="fc-note mono" id="fc-note">—</div>
+              </div>
+            </div>
+
+            <!-- RUL chart -->
+            <div class="panel">
+              <div class="panel-header">
+                REMAINING USEFUL LIFE ESTIMATE
+                <span class="panel-badge orange-badge">MODELLED ESTIMATE</span>
+              </div>
+              <canvas id="forge-rul-chart" height="180"></canvas>
+            </div>
+
+            <!-- Hardening BOM -->
+            <div class="panel forge-bom-panel">
+              <div class="panel-header">HARDENING BOM RECOMMENDATIONS</div>
+              <div class="bom-list" id="forge-bom-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: LADAKH ML MODE ══════════ -->
+      <div class="page hidden" id="page-ladakh-ml">
+        <div class="page-header">
+          <div>
+            <div class="page-title">LADAKH ML MODE — Real-Time High-Altitude Operational Prognostics</div>
+            <div class="page-sub">Trained on NASA PCoE Battery Aging Dataset + AMOVFLY UAV High-Altitude Telemetry · Live FastAPI Inference (:8000)</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="data-badge"><span class="dot dot-green"></span>FASTAPI SERVER: 127.0.0.1:8000</div>
+            <div class="data-badge orange-badge">ENSEMBLE: GBR + RF + GPR</div>
+          </div>
+        </div>
+
+        <div class="simulation-layout">
+          <!-- Controls Panel -->
+          <div class="panel controls-panel">
+            <div class="panel-header">
+              MISSION CONFIGURATION (LADAKH PROFILE)
+              <span class="panel-badge">REAL-TIME INFERENCE</span>
+            </div>
+
+            <!-- Presets -->
+            <div class="ctrl-group">
+              <div class="ctrl-label">OPERATIONAL PRESETS</div>
+              <div class="fault-grid">
+                <button class="fault-btn" onclick="setLadakhPreset('dbo')">🏔️ Daulat Beg Oldi (5,100m, -25°C)</button>
+                <button class="fault-btn" onclick="setLadakhPreset('pangong')">🌊 Pangong Tso (4,250m, -15°C)</button>
+                <button class="fault-btn" onclick="setLadakhPreset('nyoma')">🛫 Nyoma ALG (4,180m, -10°C)</button>
+                <button class="fault-btn" onclick="setLadakhPreset('sealevel')">🌊 Sea Level Base (0m, +25°C)</button>
+              </div>
+            </div>
+
+            <!-- Altitude Slider -->
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span class="ctrl-label">OPERATING ALTITUDE</span>
+                <span class="ctrl-val-display"><span id="lml-alt-disp">5,000</span> <span class="ctrl-unit">m</span></span>
+              </div>
+              <input type="range" class="eng-slider" id="lml-alt" min="0" max="6000" step="100" value="5000" oninput="onLadakhMlChange()"/>
+              <div class="ctrl-derived">
+                <span class="ctrl-derived-label">Calculated Pressure:</span>
+                <span class="mono orange" id="lml-press-disp">54.0 kPa</span>
+                <span class="ctrl-derived-label">| Density Ratio:</span>
+                <span class="mono" id="lml-rho-disp">0.62 ρ₀</span>
+              </div>
+            </div>
+
+            <!-- Ambient Temp Slider -->
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span class="ctrl-label">AMBIENT TEMPERATURE</span>
+                <span class="ctrl-val-display"><span id="lml-temp-disp">-25</span> <span class="ctrl-unit">°C</span></span>
+              </div>
+              <input type="range" class="eng-slider" id="lml-temp" min="-35" max="35" step="1" value="-25" oninput="onLadakhMlChange()"/>
+            </div>
+
+            <!-- Battery SOH -->
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span class="ctrl-label">BATTERY STATE OF HEALTH (SOH)</span>
+                <span class="ctrl-val-display"><span id="lml-soh-disp">80</span> <span class="ctrl-unit">%</span></span>
+              </div>
+              <input type="range" class="eng-slider" id="lml-soh" min="50" max="100" step="1" value="80" oninput="onLadakhMlChange()"/>
+            </div>
+
+            <!-- Current Load -->
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span class="ctrl-label">OPERATIONAL CURRENT DRAW</span>
+                <span class="ctrl-val-display"><span id="lml-load-disp">12.0</span> <span class="ctrl-unit">A</span></span>
+              </div>
+              <input type="range" class="eng-slider" id="lml-load" min="5" max="30" step="0.5" value="12.0" oninput="onLadakhMlChange()"/>
+            </div>
+
+            <!-- Payload Mass -->
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span class="ctrl-label">PAYLOAD MASS</span>
+                <span class="ctrl-val-display"><span id="lml-payload-disp">2.0</span> <span class="ctrl-unit">kg</span></span>
+              </div>
+              <input type="range" class="eng-slider" id="lml-payload" min="0.0" max="4.0" step="0.2" value="2.0" oninput="onLadakhMlChange()"/>
+            </div>
+
+            <button class="btn-primary" style="width:100%;margin-top:10px;" onclick="queryLadakhMlApi()">⚡ EXECUTE ML INFERENCE</button>
+            <div style="font-size:10px;color:var(--text-light);margin-top:6px;text-align:center;" id="lml-status-msg">Connected to FastAPI:8000 · Model latency: ~15ms</div>
+          </div>
+
+          <!-- Predictions & Training Diagnostics -->
+          <div class="panel results-panel">
+            <div class="panel-header">
+              ML PREDICTION & ADAPTIVE DECISION ENGINE
+              <span class="panel-badge" id="lml-stress-badge">CRITICAL STRESS</span>
+            </div>
+
+            <div class="stat-grid" style="margin-bottom:12px;">
+              <div class="stat-card">
+                <div class="sc-label">FLIGHT ENDURANCE</div>
+                <div class="sc-val mono orange" id="lml-out-endurance">13.5 <span class="sc-unit">min</span></div>
+                <div class="sc-sub mono" id="lml-out-endurance-loss">Sea-level: 28.6 min (-52.9%)</div>
+                <div class="sc-sub mono" id="lml-out-endurance-ci">95% CI: [12.6 – 14.4] min</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">USABLE CAPACITY</div>
+                <div class="sc-val mono orange" id="lml-out-cap">43.5 <span class="sc-unit">%</span></div>
+                <div class="sc-sub mono">Arrhenius R_int spike</div>
+                <div class="sc-sub mono">Rated: 80.0% SOH</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">ENVIRONMENTAL STRESS</div>
+                <div class="sc-val mono" id="lml-out-risk">86.9 <span class="sc-unit">/100</span></div>
+                <div class="sc-sub mono" id="lml-out-stress">CRITICAL RISK</div>
+                <div class="sc-sub mono">High aero + thermal stress</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">HOTSPOT RISE (GPR)</div>
+                <div class="sc-val mono orange" id="lml-out-hotspot">+26.5 <span class="sc-unit">°C</span></div>
+                <div class="sc-sub mono" id="lml-out-hotspot-band">95% CI: [25.0 – 28.1] °C</div>
+                <div class="sc-sub mono">Convection derate: +46.8%</div>
+              </div>
+            </div>
+
+            <!-- Action Recommendation Banner -->
+            <div style="background:var(--navy-800);border-left:4px solid var(--orange);padding:12px;border-radius:4px;margin-bottom:12px;">
+              <div style="font-size:9.5px;color:rgba(255,255,255,0.7);letter-spacing:1px;font-weight:700;">PROGNOSTICS RECOMMENDATION</div>
+              <div style="font-size:13px;font-weight:700;color:#fff;margin-top:3px;" id="lml-out-action">ENGAGE PTC HEATING FILM (Target +15°C) — PREVENT PREMATURE VOLTAGE CUTOFF</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.7);margin-top:2px;">Classification: <span class="mono orange" id="lml-out-rec-class">PREHEAT_BATTERY</span> | Guard Action: <span class="mono" id="lml-out-guard-action">PROTECT</span></div>
+            </div>
+
+            <!-- Model Training Provenance & Verification Metrics -->
+            <div class="panel-header" style="margin-top:8px;">TRAINING METRICS (ACTUAL DATASET VERIFICATION)</div>
+            <table class="eng-table" style="margin-top:6px;">
+              <thead>
+                <tr>
+                  <th>Model Component</th>
+                  <th>Algorithm</th>
+                  <th>Training Data Source</th>
+                  <th>Metric / Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Flight Endurance Regressor</td>
+                  <td>GradientBoosting (n=120, d=5)</td>
+                  <td>AMOVFLY High-Altitude Telemetry</td>
+                  <td class="mono orange">R² = 0.9807 | RMSE = 1.20 min</td>
+                </tr>
+                <tr>
+                  <td>Battery Usable Capacity</td>
+                  <td>RandomForest (n=100)</td>
+                  <td>NASA PCoE + Sub-zero Arrhenius</td>
+                  <td class="mono orange">R² = 0.9953 | RMSE = 0.93%</td>
+                </tr>
+                <tr>
+                  <td>Battery RUL Prognostics</td>
+                  <td>RandomForest Regressor</td>
+                  <td>NASA PCoE Cycles (B0005,6,7,18)</td>
+                  <td class="mono orange">R² = 0.9878</td>
+                </tr>
+                <tr>
+                  <td>Recommendation Classifier</td>
+                  <td>RandomForest (n=100)</td>
+                  <td>Multi-factor envelope stress</td>
+                  <td class="mono">Accuracy = 90.67%</td>
+                </tr>
+                <tr>
+                  <td>Thermal Rise Residual</td>
+                  <td>Gaussian Process (RBF + WhiteKernel)</td>
+                  <td>Empirical Chamber Measurements</td>
+                  <td class="mono">Provides 95% Confidence Band (±2σ)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: DRONE FLIGHT LAB ══════════ -->
+      <div class="page hidden" id="page-drone-lab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">DRONE FLIGHT LAB — Solving the LAC Drone Endurance Challenge</div>
+            <div class="page-sub">Decomposing the 60 min → 20 min flight collapse into 3 distinct physical terms · HIMVAJRA retrofit verification</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="data-badge">INDIAN ARMY LAC UAS PROFILE</div>
+            <div class="data-badge orange-badge" id="drone-retrofit-badge">RETROFIT: ACTIVE</div>
+          </div>
+        </div>
+
+        <div class="simulation-layout">
+          <!-- Controls Panel -->
+          <div class="panel controls-panel">
+            <div class="panel-header">
+              UAV MISSION CONFIGURATION
+              <span class="panel-badge">AERODYNAMICS + BATTERY</span>
+            </div>
+
+            <!-- Presets -->
+            <div class="ctrl-group">
+              <div class="ctrl-label">BENCHMARK SCENARIOS</div>
+              <div class="fault-grid">
+                <button class="fault-btn" onclick="setDroneBenchmark('sea_level')">🌊 Sea Level Base (60 min hover)</button>
+                <button class="fault-btn fault-crit" onclick="setDroneBenchmark('dbo_stock')">⚠️ Stock Drone @ DBO (16.4 min)</button>
+                <button class="fault-btn fault-ok" onclick="setDroneBenchmark('dbo_himvajra')">🛡️ HIMVAJRA Drone @ DBO (42.3 min)</button>
+              </div>
+            </div>
+
+            <!-- Altitude Slider -->
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span class="ctrl-label">OPERATING ELEVATION</span>
+                <span class="ctrl-val-display"><span id="dr-alt-v">5,000</span> <span class="ctrl-unit">m</span></span>
+              </div>
+              <input type="range" class="eng-slider" id="dr-alt" min="0" max="6500" step="100" value="5000" oninput="updateDroneLab()"/>
+              <div class="ctrl-derived">
+                <span class="ctrl-derived-label">Air Density (ρ):</span>
+                <span class="mono orange" id="dr-rho-v">0.74 kg/m³</span>
+                <span class="ctrl-derived-label">| Lift Deficit:</span>
+                <span class="mono" id="dr-lift-deficit">-39%</span>
+              </div>
+            </div>
+
+            <!-- Ambient Temperature -->
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span class="ctrl-label">AMBIENT TEMPERATURE</span>
+                <span class="ctrl-val-display"><span id="dr-temp-v">-20</span> <span class="ctrl-unit">°C</span></span>
+              </div>
+              <input type="range" class="eng-slider" id="dr-temp" min="-35" max="30" step="1" value="-20" oninput="updateDroneLab()"/>
+            </div>
+
+            <!-- Payload Mass -->
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span class="ctrl-label">MISSION PAYLOAD MASS</span>
+                <span class="ctrl-val-display"><span id="dr-payload-v">2.0</span> <span class="ctrl-unit">kg</span></span>
+              </div>
+              <input type="range" class="eng-slider" id="dr-payload" min="0.0" max="4.0" step="0.2" value="2.0" oninput="updateDroneLab()"/>
+            </div>
+
+            <!-- Toggle Retrofit -->
+            <div class="ctrl-group" style="margin-top:12px;padding:12px;background:var(--navy-800);border-radius:4px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:700;font-size:11px;color:#fff;">HIMVAJRA RETROFIT CONTROLLER</span>
+                <button class="sf-btn" id="dr-toggle-btn" style="width:auto;padding:4px 12px;" onclick="toggleDroneRetrofit()">ACTIVE</button>
+              </div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.7);margin-top:4px;">
+                High-camber cold blades + Aerogel PTC pack heater + SoP dynamic cutoff
+              </div>
+            </div>
+          </div>
+
+          <!-- Waterfall & Results Panel -->
+          <div class="panel results-panel">
+            <div class="panel-header">
+              FLIGHT TIME DECOMPOSITION & LOSS WATERFALL
+              <span class="panel-badge orange-badge">PHYSICS DECOMPOSITION</span>
+            </div>
+
+            <div class="stat-grid" style="margin-bottom:12px;">
+              <div class="stat-card">
+                <div class="sc-label">PREDICTED ENDURANCE</div>
+                <div class="sc-val mono orange" id="dr-final-endurance">42.3 <span class="sc-unit">min</span></div>
+                <div class="sc-sub mono" id="dr-stock-comparison">Stock drone: 16.4 min (+157% restored)</div>
+                <div class="sc-sub mono">Baseline sea level: 60.0 min</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">AERO LIFT DEFICIT</div>
+                <div class="sc-val mono" id="dr-loss-aero">-8.2 <span class="sc-unit">min</span></div>
+                <div class="sc-sub mono" id="dr-rec-aero">Fixed blades: +2.9 min</div>
+                <div class="sc-sub mono">Motor RPM +22% to hover</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">CHEMICAL FREEZE</div>
+                <div class="sc-val mono" id="dr-loss-cold">-23.6 <span class="sc-unit">min</span></div>
+                <div class="sc-sub mono" id="dr-rec-cold">PTC pre-heat: +17.0 min</div>
+                <div class="sc-sub mono">Arrhenius R_int double</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">VOLTAGE SAG CUTOFF</div>
+                <div class="sc-val mono" id="dr-loss-sag">-6.8 <span class="sc-unit">min</span></div>
+                <div class="sc-sub mono" id="dr-rec-sag">SoP cutoff: +6.0 min</div>
+                <div class="sc-sub mono">Avoids premature 3.3V trip</div>
+              </div>
+            </div>
+
+            <!-- Engineering Breakdown Table -->
+            <div class="panel-header" style="margin-top:10px;">THE 3 PHYSICS TERMS & HOW HIMVAJRA RESTORES EACH</div>
+            <table class="eng-table" style="margin-top:6px;">
+              <thead>
+                <tr>
+                  <th>Loss Mechanism</th>
+                  <th>Governing Physics</th>
+                  <th>Stock Loss</th>
+                  <th>HIMVAJRA Hardware/Firmware Modification</th>
+                  <th>Time Recovered</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1. Thin Air Aerodynamics</td>
+                  <td class="mono">Thrust = C_T · ρ · ω² · D⁴</td>
+                  <td class="mono">-8.2 min</td>
+                  <td>High-camber, wider-chord cold-weather carbon blades (Thrust +18% in thin air)</td>
+                  <td class="mono orange">+2.9 min</td>
+                </tr>
+                <tr>
+                  <td>2. Sub-zero Battery Freeze</td>
+                  <td class="mono">R_int(T) = R_0 · exp[E_a/k(1/T - 1/T_0)]</td>
+                  <td class="mono">-23.6 min</td>
+                  <td>Vacuum aerogel insulation blanket + 15W PTC pre-heating pad (pack kept at +15°C)</td>
+                  <td class="mono orange">+17.0 min</td>
+                </tr>
+                <tr>
+                  <td>3. False Voltage Sag Cutoff</td>
+                  <td class="mono">V_term = V_ocv - I · R_int(T)</td>
+                  <td class="mono">-6.8 min</td>
+                  <td>GUARD State-of-Power (SoP) dynamic cutoff firmware mod (prevents premature 3.3V trip)</td>
+                  <td class="mono orange">+6.0 min</td>
+                </tr>
+                <tr style="font-weight:700;background:var(--surface-gray-50);">
+                  <td>TOTAL NET PERFORMANCE</td>
+                  <td>Combined Mission Profile</td>
+                  <td class="mono">16.4 min</td>
+                  <td>Complete HIMVAJRA Drone Retrofit Kit (Weight: +78g, Cost: ₹11,500)</td>
+                  <td class="mono orange" style="font-size:13px;">42.3 min (+157%)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: RADIATION & COMMS LAB ══════════ -->
+      <div class="page hidden" id="page-rad-comms">
+        <div class="page-header">
+          <div>
+            <div class="page-title">RADIATION, COSMIC SEU & ANTENNA ANTI-ICING LAB</div>
+            <div class="page-sub">JESD89A cosmic ray neutron flux mitigation · SEC-DED EDAC memory scrubbing · Antenna rime icing & VSWR adaptive link</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="data-badge">EFFECTS 5 & 6 (DRDO)</div>
+            <div class="data-badge orange-badge">EDAC & DE-ICER ACTIVE</div>
+          </div>
+        </div>
+
+        <div class="simulation-layout">
+          <!-- Radiation & SEU Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              COSMIC RAY & UV RADIATION EXPOSURE (EFFECT 5)
+              <span class="panel-badge">JEDEC JESD89A</span>
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span class="ctrl-label">OPERATING ELEVATION</span>
+                <span class="ctrl-val-display"><span id="rc-alt-v">5,000</span> <span class="ctrl-unit">m</span></span>
+              </div>
+              <input type="range" class="eng-slider" id="rc-alt" min="0" max="6500" step="100" value="5000" oninput="updateRadComms()"/>
+            </div>
+
+            <div class="stat-grid" style="margin-top:10px;margin-bottom:12px;">
+              <div class="stat-card">
+                <div class="sc-label">COSMIC NEUTRON FLUX</div>
+                <div class="sc-val mono orange" id="rc-flux">6.75 ×</div>
+                <div class="sc-sub mono">Atmospheric shielding: 550 g/cm²</div>
+                <div class="sc-sub mono">vs 1033 g/cm² sea level</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">UV INDEX (SOLAR)</div>
+                <div class="sc-val mono orange" id="rc-uv">13.5 <span class="sc-unit">UV</span></div>
+                <div class="sc-sub mono">EXTREME UV Index</div>
+                <div class="sc-sub mono">Polymer degradation risk HIGH</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">RAW BIT-FLIP RATE</div>
+                <div class="sc-val mono" id="rc-fits">1,998 <span class="sc-unit">FITs</span></div>
+                <div class="sc-sub mono" id="rc-mtbf-raw">Unmitigated MTBF: 20.8 days</div>
+                <div class="sc-sub mono">16 GB LPDDR4 memory</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">MITIGATED MTBF</div>
+                <div class="sc-val mono orange" id="rc-mtbf-edac">47,600 <span class="sc-unit">years</span></div>
+                <div class="sc-sub mono">SEC-DED EDAC Scrubbing</div>
+                <div class="sc-sub mono">Scrub interval: 250 ms</div>
+              </div>
+            </div>
+
+            <div style="background:var(--navy-800);padding:10px;border-radius:4px;border-left:3px solid var(--green);">
+              <div style="font-size:10.5px;font-weight:700;color:#fff;">RADIATION HARDENING SPECIFICATIONS</div>
+              <ul style="font-size:10px;color:rgba(255,255,255,0.8);margin:4px 0 0 16px;padding:0;">
+                <li>Hardware SEC-DED (Single Error Correction, Double Error Detection) on SRAM/DDR buses</li>
+                <li>Triple Modular Redundancy (TMR) on flight-critical and GUARD state register banks</li>
+                <li>Periodic autonomous memory scrubbing running every 250 ms in background RTOS task</li>
+                <li>MIL-I-46058C fluoropolymer + Kapton wrapping for UV stabilization on all external cables/lenses</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Antenna Icing & RF Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              COMMUNICATION & ANTENNA DE-ICING (EFFECT 6)
+              <span class="panel-badge">RF PROPAGATION</span>
+            </div>
+
+            <div class="ctrl-group">
+              <div class="ctrl-header">
+                <span class="ctrl-label">RIME ICE ACCRETION ON ANTENNA</span>
+                <span class="ctrl-val-display"><span id="rc-ice-v">3.5</span> <span class="ctrl-unit">mm</span></span>
+              </div>
+              <input type="range" class="eng-slider" id="rc-ice" min="0" max="12" step="0.5" value="3.5" oninput="updateRadComms()"/>
+            </div>
+
+            <div class="ctrl-group" style="margin-top:6px;padding:10px;background:var(--navy-800);border-radius:4px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:700;font-size:11px;color:#fff;">PTC RADOME DE-ICING HEATER (4 W/dm²)</span>
+                <button class="sf-btn" id="rc-heater-btn" style="width:auto;padding:4px 12px;" onclick="toggleAntennaHeater()">ACTIVE</button>
+              </div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.7);margin-top:3px;">
+                Capacitive collar keeps radome surface above freezing, eliminating ice dielectric detuning
+              </div>
+            </div>
+
+            <div class="stat-grid" style="margin-top:10px;margin-bottom:12px;">
+              <div class="stat-card">
+                <div class="sc-label">ANTENNA VSWR</div>
+                <div class="sc-val mono orange" id="rc-vswr">1.32 : 1</div>
+                <div class="sc-sub mono" id="rc-vswr-status">SAFE MATCHING</div>
+                <div class="sc-sub mono" id="rc-vswr-raw">Raw icy VSWR: 4.12:1</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">REFLECTED RF POWER</div>
+                <div class="sc-val mono" id="rc-refl">1.9 <span class="sc-unit">%</span></div>
+                <div class="sc-sub mono">PA thermal load: SAFE</div>
+                <div class="sc-sub mono">Without de-icer: 37.9% reflected</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">RF LINK MARGIN</div>
+                <div class="sc-val mono orange" id="rc-margin">+17.3 <span class="sc-unit">dB</span></div>
+                <div class="sc-sub mono">Line of Sight Range: 15 km</div>
+                <div class="sc-sub mono">Ice loss: -0.7 dB</div>
+              </div>
+              <div class="stat-card">
+                <div class="sc-label">ADAPTIVE MODULATION</div>
+                <div class="sc-val mono" id="rc-mod">64-QAM</div>
+                <div class="sc-sub mono">Dynamic modulation backoff</div>
+                <div class="sc-sub mono">Fallback: QPSK / DSSS</div>
+              </div>
+            </div>
+
+            <div style="background:var(--navy-800);padding:10px;border-radius:4px;border-left:3px solid var(--orange);">
+              <div style="font-size:10.5px;font-weight:700;color:#fff;">COMMUNICATION HARDENING SPECIFICATIONS</div>
+              <ul style="font-size:10px;color:rgba(255,255,255,0.8);margin:4px 0 0 16px;padding:0;">
+                <li>PTC 4 W/dm² de-icing heating ring on VHF/UHF radomes and satellite dish feeds</li>
+                <li>Superhydrophobic nanocomposite surface treatment (contact angle &gt; 155°) to shed freezing mist</li>
+                <li>Dynamic modulation scaling: automatic down-shift (64-QAM → 16-QAM → QPSK) when VSWR rises</li>
+                <li>Store-and-forward delay-tolerant mesh protocol buffering telemetry during mountain blackout</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: DRDO RETROFIT MATRIX ══════════ -->
+      <div class="page hidden" id="page-modifications">
+        <div class="page-header">
+          <div>
+            <div class="page-title">DRDO SPECIALIZED DESIGN MODIFICATION CATALOG</div>
+            <div class="page-sub">Feasible, hardware-implementable retrofit specifications for High Altitude (HAA) and Super High Altitude (SHAA) equipment</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="data-badge">ORGANIZATION: DRDO</div>
+            <div class="data-badge orange-badge">4 EQUIPMENT CLASSES</div>
+          </div>
+        </div>
+
+        <div class="fleet-detail" style="margin-top:0;">
+          <div class="fd-title" style="font-size:13px;">FIELD RETROFIT SPECIFICATIONS BY MILITARY SYSTEM CLASS</div>
+
+          <!-- Class 1 -->
+          <div class="panel" style="margin-top:10px;">
+            <div class="panel-header">1. COMPUTERS, SERVERS & TACTICAL OPERATIONAL DISPLAYS</div>
+            <table class="eng-table">
+              <thead>
+                <tr>
+                  <th style="width:20%;">Ladakh Failure Mode</th>
+                  <th style="width:25%;">Physical Root Cause</th>
+                  <th style="width:35%;">Hardware & Firmware Modification</th>
+                  <th style="width:20%;">Feasibility & Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Processor Thermal Throttle / Overheat</td>
+                  <td>Air density halves at 5,500m → Convection drops 74% (Cold Air Hot Chip paradox)</td>
+                  <td>Dual-channel heat pipes to chassis skin + Gore-Tex pressure-equalization vents + altitude DVFS firmware governor</td>
+                  <td class="mono orange">₹18,500 / kit · 45 min install</td>
+                </tr>
+                <tr>
+                  <td>LCD Display Fluid Freezing & Fogging</td>
+                  <td>Liquid crystal viscosity rises sharply at −35°C; internal condensation on warm-up</td>
+                  <td>Transparent ITO (Indium Tin Oxide) glass heating film (15W) + internal molecular-sieve desiccant cartridge</td>
+                  <td class="mono">₹6,200 / display</td>
+                </tr>
+                <tr>
+                  <td>Memory Bit-Flips / Crash</td>
+                  <td>Cosmic ray neutron flux increases 5.8× at 5,000m (JESD89A)</td>
+                  <td>SEC-DED hardware EDAC + periodic memory scrub task (250 ms) + TMR critical registers</td>
+                  <td class="mono">Firmware upgrade (₹0)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Class 2 -->
+          <div class="panel" style="margin-top:12px;">
+            <div class="panel-header">2. TELECOM BASE STATIONS & MILITARY SDR RADIOS (CNR / STARS-V)</div>
+            <table class="eng-table">
+              <thead>
+                <tr>
+                  <th style="width:20%;">Ladakh Failure Mode</th>
+                  <th style="width:25%;">Physical Root Cause</th>
+                  <th style="width:35%;">Hardware & Firmware Modification</th>
+                  <th style="width:20%;">Feasibility & Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Antenna Icing & Transmit PA Burnout</td>
+                  <td>Rime ice dielectric detuning shifts VSWR to 4.5:1, reflecting 38% RF power back to PA</td>
+                  <td>PTC 4 W/dm² radome collar + superhydrophobic coating + automatic RF modulation backoff to QPSK</td>
+                  <td class="mono orange">₹24,000 / mast</td>
+                </tr>
+                <tr>
+                  <td>RF Frequency Drift & Desync</td>
+                  <td>Diurnal 50°C temperature swing causes standard crystal oscillators to drift off frequency</td>
+                  <td>Replace uncompensated crystals with ±0.5 ppm hermetic Temperature-Compensated TCXO / OCXO</td>
+                  <td class="mono">₹4,800 / radio</td>
+                </tr>
+                <tr>
+                  <td>RF Power Supply Flashover</td>
+                  <td>Low atmospheric pressure drops Paschen dielectric breakdown voltage</td>
+                  <td>Augment PCB creepage ×1.74 + Class H corona-shield conformal potting on all high-voltage rails</td>
+                  <td class="mono">₹5,500 / PSU</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Class 3 -->
+          <div class="panel" style="margin-top:12px;">
+            <div class="panel-header">3. POWER ELECTRONICS, GENSETS & BATTERY ENERGY STORAGE</div>
+            <table class="eng-table">
+              <thead>
+                <tr>
+                  <th style="width:20%;">Ladakh Failure Mode</th>
+                  <th style="width:25%;">Physical Root Cause</th>
+                  <th style="width:35%;">Hardware & Firmware Modification</th>
+                  <th style="width:20%;">Feasibility & Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Battery Pack Capacity Collapse</td>
+                  <td>Arrhenius internal impedance doubling + false voltage cutoff sag tripping BMS</td>
+                  <td>Vacuum aerogel insulation wrap + polyimide heater pad + GUARD State-of-Power cutoff algorithm</td>
+                  <td class="mono orange">₹14,200 / pack</td>
+                </tr>
+                <tr>
+                  <td>Lithium Plating & Fire Hazard</td>
+                  <td>Charging Li-ion cells below 0°C forces metallic lithium plating onto anode</td>
+                  <td>Hardware-enforced non-overridable charge inhibit below 0°C with automated pre-heat interlock</td>
+                  <td class="mono">Firmware / BMS Mod</td>
+                </tr>
+                <tr>
+                  <td>Generator Cold Seizure</td>
+                  <td>Standard lube oils freeze at −25°C; combustion air density is 50% deficient</td>
+                  <td>MIL-PRF-23699 synthetic ester low-pour-point oil + glow-plug intake air preheater + turbo-boost mapping</td>
+                  <td class="mono">₹28,000 / genset</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Class 4 -->
+          <div class="panel" style="margin-top:12px;">
+            <div class="panel-header">4. TACTICAL UAVS & LOITERING MUNITIONS</div>
+            <table class="eng-table">
+              <thead>
+                <tr>
+                  <th style="width:20%;">Ladakh Failure Mode</th>
+                  <th style="width:25%;">Physical Root Cause</th>
+                  <th style="width:35%;">Hardware & Firmware Modification</th>
+                  <th style="width:20%;">Feasibility & Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Flight Endurance Loss (60 min → 20 min)</td>
+                  <td>Rotor lift deficit (thin air) + Cold battery capacity drop + Premature voltage sag cutoff</td>
+                  <td>High-camber carbon-fiber cold blades + Aerogel PTC battery blanket + State-of-Power cutoff (Restores to 42+ min)</td>
+                  <td class="mono orange">₹11,500 / drone · +78g wt</td>
+                </tr>
+                <tr>
+                  <td>ESC & Motor Thermal Throttling</td>
+                  <td>Motors draw 41% higher current to maintain hover in low-density air; cooling is 74% degraded</td>
+                  <td>Anodized finned ESC heat spreaders exposed to propeller downwash + copper substrate heat sinks</td>
+                  <td class="mono">₹3,400 / drone</td>
+                </tr>
+                <tr>
+                  <td>Telemetry Comms Loss Behind Ridgelines</td>
+                  <td>High mountain shadow and multipath reflections block line-of-sight RF link</td>
+                  <td>LoRa 868 MHz delay-tolerant store-and-forward mesh nodes deployed at ridge waypoints</td>
+                  <td class="mono">₹8,000 / relay node</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: GUARD ══════════ -->
+      <div class="page hidden" id="page-guard">
+        <div class="page-header">
+          <div>
+            <div class="page-title">GUARD — Autonomous Envelope Protection</div>
+            <div class="page-sub">STM32G431 control loop · ESP32-S3 comms · fully autonomous · 10 Hz evaluation</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="guard-state-badge large-badge" id="guard-page-state">NOMINAL</div>
+          </div>
+        </div>
+
+        <div class="guard-layout">
+          <!-- State machine -->
+          <div class="guard-left">
+            <div class="panel">
+              <div class="panel-header">ENVELOPE STATE MACHINE</div>
+              <div class="state-machine-vis">
+                <div class="sm-state" id="sm-nominal" data-state="NOMINAL">
+                  <div class="sm-state-name">NOMINAL</div>
+                  <div class="sm-state-trigger" id="sm-nominal-trigger">All margins &gt; 20%</div>
+                  <div class="sm-state-actions">Fan 30% · Passive monitor</div>
+                </div>
+                <div class="sm-arrow">↓</div>
+                <div class="sm-state" id="sm-derated" data-state="DERATED">
+                  <div class="sm-state-name">DERATED</div>
+                  <div class="sm-state-trigger" id="sm-derated-trigger">T_j &gt; 80% limit OR SoP &lt; 20% OR P_abs &lt; 60 kPa</div>
+                  <div class="sm-state-actions">Fan 100% · Load shed · Notify operator</div>
+                </div>
+                <div class="sm-arrow">↓</div>
+                <div class="sm-state" id="sm-protect" data-state="PROTECT">
+                  <div class="sm-state-name">PROTECT</div>
+                  <div class="sm-state-trigger" id="sm-protect-trigger">T_j &gt; limit−5°C OR T_bat &lt; 0°C OR dew &lt; 2°C</div>
+                  <div class="sm-state-actions">Charge inhibit · HV hold · Forced throttle</div>
+                </div>
+                <div class="sm-arrow">↓</div>
+                <div class="sm-state" id="sm-lockout" data-state="LOCKOUT">
+                  <div class="sm-state-name">LOCKOUT</div>
+                  <div class="sm-state-trigger" id="sm-lockout-trigger">Hard limit breach OR sensor fault OR damage &gt; 95%</div>
+                  <div class="sm-state-actions">Cut non-safety power · Operator ACK required</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sensor inputs -->
+            <div class="panel guard-sensors">
+              <div class="panel-header">LIVE SENSOR INPUTS</div>
+              <div class="gs-row">
+                <span class="gs-label">T<sub>junction</sub> est.</span>
+                <input type="range" class="eng-slider sm-slider" id="g-tj" min="20" max="105" value="55" step="1" oninput="updateGuardPage()"/>
+                <span class="mono gs-val" id="g-tj-v">55 °C</span>
+              </div>
+              <div class="gs-row">
+                <span class="gs-label">T<sub>battery</sub></span>
+                <input type="range" class="eng-slider sm-slider" id="g-tbat" min="-35" max="45" value="15" step="1" oninput="updateGuardPage()"/>
+                <span class="mono gs-val" id="g-tbat-v">15 °C</span>
+              </div>
+              <div class="gs-row">
+                <span class="gs-label">SoP reserve</span>
+                <input type="range" class="eng-slider sm-slider" id="g-sop" min="0" max="100" value="60" step="1" oninput="updateGuardPage()"/>
+                <span class="mono gs-val" id="g-sop-v">60 %</span>
+              </div>
+              <div class="gs-row">
+                <span class="gs-label">Pressure</span>
+                <input type="range" class="eng-slider sm-slider" id="g-press" min="30" max="101" value="80" step="1" oninput="updateGuardPage()"/>
+                <span class="mono gs-val" id="g-press-v">80 kPa</span>
+              </div>
+              <div class="gs-row">
+                <span class="gs-label">Dew margin</span>
+                <input type="range" class="eng-slider sm-slider" id="g-dew" min="-5" max="20" value="10" step="0.5" oninput="updateGuardPage()"/>
+                <span class="mono gs-val" id="g-dew-v">10.0 °C</span>
+              </div>
+              <div class="gs-row">
+                <span class="gs-label">Cycle damage</span>
+                <input type="range" class="eng-slider sm-slider" id="g-damage" min="0" max="100" value="25" step="1" oninput="updateGuardPage()"/>
+                <span class="mono gs-val" id="g-damage-v">25 %</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Protective actions + fault injection + audit -->
+          <div class="guard-right">
+            <div class="panel">
+              <div class="panel-header">PROTECTIVE ACTIONS</div>
+              <div class="protection-grid">
+                <div class="prot-item" id="pa-fan"><span class="prot-icon">⊛</span><span class="prot-label">FAN CONTROL</span><span class="prot-val" id="pa-fan-val">30%</span></div>
+                <div class="prot-item" id="pa-heater"><span class="prot-icon">◈</span><span class="prot-label">HEATER FILM</span><span class="prot-val" id="pa-heater-val">OFF</span></div>
+                <div class="prot-item" id="pa-load"><span class="prot-icon">⊡</span><span class="prot-label">LOAD SHED</span><span class="prot-val" id="pa-load-val">FULL</span></div>
+                <div class="prot-item" id="pa-charge"><span class="prot-icon">⚡</span><span class="prot-label">CHARGE ENABLE</span><span class="prot-val" id="pa-charge-val">ENABLED</span></div>
+                <div class="prot-item" id="pa-compute"><span class="prot-icon">◧</span><span class="prot-label">COMPUTE DERATE</span><span class="prot-val" id="pa-compute-val">FULL</span></div>
+                <div class="prot-item" id="pa-dew"><span class="prot-icon">◉</span><span class="prot-label">DEW-PT HOLD</span><span class="prot-val" id="pa-dew-val">CLEAR</span></div>
+              </div>
+            </div>
+
+            <!-- FAULT INJECTION - the star demo feature -->
+            <div class="panel fault-panel">
+              <div class="panel-header">
+                FAULT INJECTION
+                <span class="panel-badge orange-badge">DEMO FEATURE</span>
+              </div>
+              <div class="fault-grid">
+                <button class="fault-btn" onclick="injectFault('high_altitude')">HIGH ALTITUDE</button>
+                <button class="fault-btn" onclick="injectFault('sensor_fail')">SENSOR FAILURE</button>
+                <button class="fault-btn fault-warn" onclick="injectFault('over_temp')">OVER-TEMPERATURE</button>
+                <button class="fault-btn fault-warn" onclick="injectFault('overcurrent')">OVERCURRENT</button>
+                <button class="fault-btn fault-warn" onclick="injectFault('low_battery')">LOW BATTERY</button>
+                <button class="fault-btn fault-warn" onclick="injectFault('pressure_drop')">PRESSURE DROP</button>
+                <button class="fault-btn fault-crit" onclick="injectFault('flashover')">FLASHOVER</button>
+                <button class="fault-btn fault-warn" onclick="injectFault('comms_loss')">COMMS LOSS</button>
+                <button class="fault-btn fault-crit" onclick="injectFault('seu_radiation')">COSMIC SEU (BIT-FLIP)</button>
+                <button class="fault-btn fault-warn" onclick="injectFault('antenna_icing')">ANTENNA ICING (VSWR 4.5)</button>
+              </div>
+              <button class="fault-btn fault-ok" style="width:100%;margin-top:8px;" onclick="injectFault('recovery')">RECOVERY / RESET</button>
+
+              <!-- Fault event display -->
+              <div class="fault-event" id="fault-event" style="display:none">
+                <div class="fe-title" id="fe-title">SYSTEM TRANSITION</div>
+                <div class="fe-from-to"><span id="fe-from">—</span> → <span id="fe-to">—</span></div>
+                <div class="fe-reason" id="fe-reason">—</div>
+                <div class="fe-action" id="fe-action">—</div>
+              </div>
+            </div>
+
+            <!-- Audit log -->
+            <div class="panel">
+              <div class="panel-header">AUDIT LOG — HASH-CHAINED</div>
+              <div class="audit-log" id="guard-audit-log"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: TELEMETRY ══════════ -->
+      <div class="page hidden" id="page-telemetry">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Sensor Telemetry</div>
+            <div class="page-sub">Live thermocouple readings · pressure · power · SYNTHETIC DATA for simulation</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="data-badge orange-badge">SYNTHETIC DATA</div>
+            <div class="dot" id="telem-live-dot" style="display:inline-block"></div>
+            <span style="font-size:11px;color:var(--text-mid);font-family:var(--mono)">LIVE</span>
+          </div>
+        </div>
+
+        <!-- TC array -->
+        <div class="panel">
+          <div class="panel-header">THERMOCOUPLE ARRAY — 8 CHANNELS (K-type + MAX31855)</div>
+          <div class="tc-array" id="tc-array">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <!-- Other sensors row -->
+        <div class="telem-sensors-row">
+          <div class="panel telem-sensor-panel">
+            <div class="panel-header">PRESSURE / ENVIRONMENT</div>
+            <div class="ts-row"><span class="ts-label">BMP390 (primary)</span><span class="mono ts-val" id="ts-press1">— kPa</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">MPX5100AP (redundant)</span><span class="mono ts-val" id="ts-press2">— kPa</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">SHT45 — RH</span><span class="mono ts-val" id="ts-rh">— %</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">Dew point</span><span class="mono ts-val" id="ts-dew">— °C</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row warn-row" id="ts-press-agree"><span class="ts-label">Sensor agreement</span><span class="mono ts-val" id="ts-agree-val">— kPa diff</span><span class="ts-status" id="ts-agree-dot"></span></div>
+          </div>
+          <div class="panel telem-sensor-panel">
+            <div class="panel-header">POWER MONITOR — INA228</div>
+            <div class="ts-row"><span class="ts-label">Bus voltage</span><span class="mono ts-val" id="ts-vbus">— V</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">Bus current</span><span class="mono ts-val" id="ts-ibus">— A</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">Power</span><span class="mono ts-val" id="ts-pwr">— W</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">Batt. R_int</span><span class="mono ts-val" id="ts-rint">— mΩ</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">State of Power</span><span class="mono ts-val orange" id="ts-sop">— %</span><span class="ts-status dot-green dot-sm"></span></div>
+          </div>
+          <div class="panel telem-sensor-panel">
+            <div class="panel-header">BATTERY + SAFETY</div>
+            <div class="ts-row"><span class="ts-label">T_bat (NTC-1)</span><span class="mono ts-val" id="ts-tbat1">— °C</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">T_bat (NTC-2)</span><span class="mono ts-val" id="ts-tbat2">— °C</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">SOH estimate</span><span class="mono ts-val" id="ts-soh">— %</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">Arc risk (Paschen)</span><span class="mono ts-val" id="ts-arc">—</span><span class="ts-status dot-green dot-sm"></span></div>
+            <div class="ts-row"><span class="ts-label">SEU corrections</span><span class="mono ts-val" id="ts-seu">0</span><span class="ts-status dot-green dot-sm"></span></div>
+          </div>
+        </div>
+
+        <!-- Telemetry architecture -->
+        <div class="panel">
+          <div class="panel-header">TELEMETRY ARCHITECTURE — STORE-AND-FORWARD</div>
+          <div class="telem-arch">
+            <div class="ta-node"><div class="ta-icon">◻</div><div class="ta-label">STM32G431</div><div class="ta-sub">Control loop 10Hz</div></div>
+            <div class="ta-arrow" id="ta-arr1">→</div>
+            <div class="ta-node"><div class="ta-icon">◻</div><div class="ta-label">ESP32-S3</div><div class="ta-sub">Comms / logging</div></div>
+            <div class="ta-arrow" id="ta-arr2">→</div>
+            <div class="ta-node"><div class="ta-icon">◻</div><div class="ta-label">MQTT / LoRa</div><div class="ta-sub">Protobuf frames</div></div>
+            <div class="ta-arrow" id="ta-arr3">→</div>
+            <div class="ta-node highlight-node"><div class="ta-icon">◼</div><div class="ta-label">STORE & FORWARD</div><div class="ta-sub mono">~230 day buffer</div></div>
+            <div class="ta-arrow" id="ta-arr4">→</div>
+            <div class="ta-node"><div class="ta-icon">◻</div><div class="ta-label">FIELD SERVER</div><div class="ta-sub">FastAPI on-prem</div></div>
+            <div class="ta-arrow" id="ta-arr5">→</div>
+            <div class="ta-node"><div class="ta-icon">◻</div><div class="ta-label">TIMESCALEDB</div><div class="ta-sub">Hypertables</div></div>
+            <div class="ta-arrow" id="ta-arr6">→</div>
+            <div class="ta-node"><div class="ta-icon">◻</div><div class="ta-label">FLEET UI</div><div class="ta-sub">This application</div></div>
+          </div>
+          <div class="offline-banner" id="offline-banner" style="display:none">
+            <span class="dot dot-orange"></span>
+            NETWORK OFFLINE — Local simulation continues · Telemetry buffered locally · Pending: <span id="pending-count">0</span> records
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: FLEET ══════════ -->
+      <div class="page hidden" id="page-fleet">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Fleet Overview</div>
+            <div class="page-sub">Asset monitoring · environment · state · maintenance scheduling</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="data-badge orange-badge">SYNTHETIC DATA</div>
+          </div>
+        </div>
+
+        <div class="fleet-layout">
+          <div class="fleet-left">
+            <!-- Fleet summary -->
+            <div class="fleet-summary-row">
+              <div class="fs-card ok"><div class="fs-num" id="fs-nominal">3</div><div class="fs-label">NOMINAL</div></div>
+              <div class="fs-card warn"><div class="fs-num" id="fs-derated">2</div><div class="fs-label">DERATED</div></div>
+              <div class="fs-card danger"><div class="fs-num" id="fs-protect">1</div><div class="fs-label">PROTECT</div></div>
+              <div class="fs-card crit"><div class="fs-num" id="fs-lockout">0</div><div class="fs-label">LOCKOUT</div></div>
+            </div>
+
+            <!-- Map area (SVG-based inline) -->
+            <div class="panel fleet-map-panel">
+              <div class="panel-header">DEPLOYMENT MAP — Ladakh Region (ILLUSTRATIVE)</div>
+              <div class="fleet-map-wrap">
+                <svg class="fleet-map" viewBox="0 0 500 300" id="fleet-map-svg">
+                  <!-- Mountain terrain background -->
+                  <path d="M0 300 L0 180 L40 140 L80 160 L120 100 L160 130 L200 80 L240 110 L280 60 L320 90 L360 50 L400 80 L440 40 L480 70 L500 50 L500 300Z" fill="#d8e8f0" opacity="0.4"/>
+                  <path d="M0 300 L0 220 L60 200 L100 220 L150 190 L200 210 L260 180 L320 200 L380 170 L440 190 L500 160 L500 300Z" fill="#b8d0e8" opacity="0.3"/>
+                  <!-- LAC line -->
+                  <path d="M40 40 Q150 80 250 120 Q350 160 460 200" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="6,3" fill="none" opacity="0.6"/>
+                  <text x="360" y="185" font-size="10" fill="#c0392b" opacity="0.8">LAC</text>
+                  <!-- Altitude contours -->
+                  <text x="10" y="295" font-size="8" fill="#6b8299">3,000 m</text>
+                  <text x="10" y="220" font-size="8" fill="#6b8299">4,500 m</text>
+                  <text x="10" y="140" font-size="8" fill="#6b8299">5,500 m</text>
+                  <!-- Assets will be rendered by JS -->
+                  <g id="fleet-assets-layer"></g>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Asset list -->
+            <div class="panel">
+              <div class="panel-header">ASSET REGISTRY</div>
+              <div class="asset-list" id="asset-list"></div>
+            </div>
+          </div>
+
+          <!-- Asset detail panel -->
+          <div class="fleet-right panel" id="asset-detail-panel">
+            <div class="panel-header">ASSET DETAIL</div>
+            <div class="asset-detail-placeholder" id="asset-detail-placeholder">
+              Select an asset from the list or map to view details.
+            </div>
+            <div class="asset-detail-content hidden" id="asset-detail-content">
+              <div class="ad-header">
+                <div class="ad-name" id="ad-name">—</div>
+                <div class="ad-state guard-state-badge" id="ad-state">—</div>
+              </div>
+              <div class="ad-section">ENVIRONMENT</div>
+              <div class="ad-row"><span class="ad-label">Altitude</span><span class="mono ad-val" id="ad-alt">—</span></div>
+              <div class="ad-row"><span class="ad-label">Pressure</span><span class="mono ad-val" id="ad-press">—</span></div>
+              <div class="ad-row"><span class="ad-label">Ambient</span><span class="mono ad-val" id="ad-amb">—</span></div>
+              <div class="ad-section">THERMAL</div>
+              <div class="ad-row"><span class="ad-label">Hotspot (est.)</span><span class="mono ad-val orange" id="ad-hot">—</span></div>
+              <div class="ad-row"><span class="ad-label">Thermal margin</span><span class="mono ad-val" id="ad-margin">—</span></div>
+              <div class="ad-section">BATTERY</div>
+              <div class="ad-row"><span class="ad-label">SOH</span><span class="mono ad-val" id="ad-soh">—</span></div>
+              <div class="ad-row"><span class="ad-label">SoP reserve</span><span class="mono ad-val" id="ad-sop">—</span></div>
+              <div class="ad-section">MAINTENANCE</div>
+              <div class="ad-row"><span class="ad-label">Cycle damage</span><span class="mono ad-val" id="ad-damage">—</span></div>
+              <div class="ad-row"><span class="ad-label">RUL estimate</span><span class="mono ad-val orange" id="ad-rul">—</span></div>
+              <div class="ad-recommendation" id="ad-rec">—</div>
+              <div class="ad-section">LAST TELEMETRY</div>
+              <div class="ad-row"><span class="ad-label">Timestamp</span><span class="mono ad-val" id="ad-ts">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: MAINTENANCE ══════════ -->
+      <div class="page hidden" id="page-maintenance">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Maintenance & RUL</div>
+            <div class="page-sub">Remaining useful life · cycle damage · maintenance scheduling · MODELLED ESTIMATES</div>
+          </div>
+          <div class="page-header-actions">
+            <div class="data-badge orange-badge">MODELLED ESTIMATE</div>
+          </div>
+        </div>
+
+        <div class="maint-layout">
+          <div class="panel">
+            <div class="panel-header">REMAINING USEFUL LIFE — SOLDER JOINT FATIGUE (Coffin–Manson)<span class="panel-badge orange-badge">MODELLED ESTIMATE</span></div>
+            <canvas id="maint-rul-chart" height="200"></canvas>
+          </div>
+          <div class="maint-bottom">
+            <div class="panel">
+              <div class="panel-header">FLEET MAINTENANCE SCHEDULE</div>
+              <table class="eng-table">
+                <thead><tr><th>Asset</th><th>Site</th><th>Cycle Damage</th><th>RUL (years)</th><th>Recommendation</th><th>Priority</th></tr></thead>
+                <tbody id="maint-schedule-tbody"></tbody>
+              </table>
+            </div>
+            <div class="panel">
+              <div class="panel-header">DAMAGE ACCUMULATION — Miner's Rule</div>
+              <canvas id="maint-damage-chart" height="160"></canvas>
+              <div class="table-caption">Damage = Σ(n_i / N_fi). Replace at 1.0. Ladakh 2 cycles/day at ΔT=50°C → ~N_f=800 cycles.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE: REPORTS ══════════ -->
+      <div class="page hidden" id="page-reports">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Derating Report Generator</div>
+            <div class="page-sub">Physics-based · asset-specific · hardening recommendations · exportable</div>
+          </div>
+        </div>
+
+        <div class="reports-layout">
+          <div class="panel reports-config">
+            <div class="panel-header">REPORT CONFIGURATION</div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">ASSET ID</div>
+              <input type="text" class="eng-input" id="rep-asset-id" value="HIMVAJRA-ALPHA-001"/>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">COMPONENT CLASS</div>
+              <select class="eng-select" id="rep-comp">
+                <option value="processor">Processor / Edge Compute</option>
+                <option value="psu">Power Supply Unit</option>
+                <option value="battery">Li-ion Battery Pack</option>
+                <option value="motor">Motor Driver / ESC</option>
+                <option value="radar">Radar Electronics</option>
+              </select>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">DEPLOYMENT ALTITUDE (m)</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="rep-alt" min="3000" max="6000" value="5000" step="100" oninput="updateReportPreview()"/>
+                <div class="ctrl-readout"><span class="mono" id="rep-alt-v">5,000</span> m</div>
+              </div>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">AMBIENT TEMPERATURE (°C)</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="rep-temp" min="-35" max="45" value="25" step="1" oninput="updateReportPreview()"/>
+                <div class="ctrl-readout"><span class="mono" id="rep-temp-v">25</span> °C</div>
+              </div>
+            </div>
+            <div class="ctrl-group">
+              <div class="ctrl-label">POWER DISSIPATION (W)</div>
+              <div class="ctrl-slider-wrap">
+                <input type="range" class="eng-slider" id="rep-power" min="1" max="100" value="15" step="1" oninput="updateReportPreview()"/>
+                <div class="ctrl-readout"><span class="mono" id="rep-power-v">15</span> W</div>
+              </div>
+            </div>
+            <button class="eng-btn-primary" onclick="generateReport()">GENERATE DERATING REPORT</button>
+            <button class="eng-btn-secondary" onclick="printReport()">PRINT / EXPORT</button>
+          </div>
+
+          <div class="panel reports-preview" id="report-preview">
+            <div class="panel-header">
+              DERATING REPORT PREVIEW
+              <span class="mono" id="rep-timestamp" style="font-size:11px;color:var(--text-light)"></span>
+            </div>
+            <div class="report-doc" id="report-doc">
+              <div class="report-watermark">SIMULATION — NOT A VALIDATED MEASUREMENT</div>
+              <!-- populated by generateReport() -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main><!-- /workspace -->
+  </div><!-- /app-body -->
+</div><!-- /app-shell -->
+
+<script src="app.js"></script>
+</body>
+</html>
