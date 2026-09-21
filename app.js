@@ -437,6 +437,382 @@ function updateAllEngines() {
   document.getElementById('cond-tdew').innerText = `${t_dew.toFixed(1)} °C`;
   document.getElementById('cond-margin').innerText = `+${dewMargin.toFixed(1)} °C`;
   document.getElementById('cond-status').innerText = dewMargin > 2.0 ? 'SAFE TO START' : 'POWER HOLD ACTIVE';
+
+  // Evaluate Decision Support Dashboard
+  evaluateDecisionSupport();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PREDICTIVE DECISION-SUPPORT DASHBOARD ENGINE
+   ═══════════════════════════════════════════════════════════════ */
+function onDecisionInputChanged() {
+  const altSlider = document.getElementById('ds-alt-slider');
+  const tempSlider = document.getElementById('ds-temp-slider');
+  const sohSlider = document.getElementById('ds-soh-slider');
+  const currSlider = document.getElementById('ds-curr-slider');
+  const payloadSlider = document.getElementById('ds-payload-slider');
+
+  if (!altSlider) return;
+
+  STATE.alt = parseFloat(altSlider.value);
+  STATE.temp = parseFloat(tempSlider.value);
+  STATE.bat.soh = parseFloat(sohSlider.value);
+  STATE.bat.loadI = parseFloat(currSlider.value);
+  STATE.power = parseFloat(payloadSlider.value);
+
+  const altVal = document.getElementById('ds-alt-val');
+  if (altVal) altVal.innerText = `${STATE.alt.toLocaleString()} m`;
+  const tempVal = document.getElementById('ds-temp-val');
+  if (tempVal) tempVal.innerText = `${STATE.temp.toFixed(1)} °C`;
+  const sohVal = document.getElementById('ds-soh-val');
+  if (sohVal) sohVal.innerText = `${STATE.bat.soh}%`;
+  const currVal = document.getElementById('ds-curr-val');
+  if (currVal) currVal.innerText = `${STATE.bat.loadI.toFixed(1)} A`;
+  const payloadVal = document.getElementById('ds-payload-val');
+  if (payloadVal) payloadVal.innerText = `${STATE.power.toFixed(1)} W`;
+
+  // Synchronize environmental chamber inputs if present
+  const chAlt = document.getElementById('ch-alt-slider');
+  if (chAlt) chAlt.value = STATE.alt;
+  const chTemp = document.getElementById('ch-temp-slider');
+  if (chTemp) chTemp.value = STATE.temp;
+  const chPwr = document.getElementById('ch-pwr-slider');
+  if (chPwr) chPwr.value = STATE.power;
+
+  updateAllEngines();
+  renderDecisionPrognosticChart();
+}
+
+function toggleDecisionPreheat() {
+  STATE.bat.isPreheated = !STATE.bat.isPreheated;
+  const btn = document.getElementById('ds-preheat-btn');
+  const txt = document.getElementById('ds-preheat-val');
+
+  if (STATE.bat.isPreheated) {
+    if (txt) { txt.innerText = 'ACTIVE (+12°C)'; txt.style.color = 'var(--green-600)'; }
+    if (btn) { btn.innerText = 'TOGGLE PRE-HEATER (CURRENT: ACTIVE)'; btn.className = 'dec-action-btn continue'; }
+  } else {
+    if (txt) { txt.innerText = 'INACTIVE (COLD-SOAK)'; txt.style.color = 'var(--orange-600)'; }
+    if (btn) { btn.innerText = 'TOGGLE PRE-HEATER (CURRENT: COLD)'; btn.className = 'dec-action-btn preheat'; }
+  }
+
+  updateAllEngines();
+  renderDecisionPrognosticChart();
+}
+
+function applyDecisionPreset(presetKey) {
+  const presets = {
+    ladakh_cruise: { alt: 5500, temp: -25, soh: 90, curr: 12.5, power: 15, preheat: true },
+    cold_start:    { alt: 5000, temp: -35, soh: 85, curr: 15.0, power: 20, preheat: false },
+    degraded_soh:  { alt: 4500, temp: -20, soh: 58, curr: 18.0, power: 25, preheat: true },
+    high_payload:  { alt: 6000, temp: 15,  soh: 92, curr: 22.0, power: 42, preheat: false },
+  };
+
+  const p = presets[presetKey];
+  if (!p) return;
+
+  const altSlider = document.getElementById('ds-alt-slider');
+  const tempSlider = document.getElementById('ds-temp-slider');
+  const sohSlider = document.getElementById('ds-soh-slider');
+  const currSlider = document.getElementById('ds-curr-slider');
+  const payloadSlider = document.getElementById('ds-payload-slider');
+
+  if (altSlider) altSlider.value = p.alt;
+  if (tempSlider) tempSlider.value = p.temp;
+  if (sohSlider) sohSlider.value = p.soh;
+  if (currSlider) currSlider.value = p.curr;
+  if (payloadSlider) payloadSlider.value = p.power;
+
+  STATE.bat.isPreheated = p.preheat;
+  const btn = document.getElementById('ds-preheat-btn');
+  const txt = document.getElementById('ds-preheat-val');
+  if (p.preheat) {
+    if (txt) { txt.innerText = 'ACTIVE (+12°C)'; txt.style.color = 'var(--green-600)'; }
+    if (btn) { btn.innerText = 'TOGGLE PRE-HEATER (CURRENT: ACTIVE)'; btn.className = 'dec-action-btn continue'; }
+  } else {
+    if (txt) { txt.innerText = 'INACTIVE (COLD-SOAK)'; txt.style.color = 'var(--orange-600)'; }
+    if (btn) { btn.innerText = 'TOGGLE PRE-HEATER (CURRENT: COLD)'; btn.className = 'dec-action-btn preheat'; }
+  }
+
+  onDecisionInputChanged();
+}
+
+function evaluateDecisionSupport() {
+  const pKpa = PHY.altToP(STATE.alt) / 1000;
+  const pressVal = document.getElementById('ds-press-val');
+  if (pressVal) pressVal.innerText = `${pKpa.toFixed(1)} kPa`;
+
+  const thermal = PHY.thermalModel(STATE.power, STATE.temp, STATE.alt, STATE.coolingMode, STATE.cfg);
+  const battery = PHY.batteryModel(STATE.temp, STATE.bat.loadI, STATE.bat.isPreheated, STATE.cfg);
+  const tDew = PHY.dewPoint(STATE.temp, STATE.rh);
+  const dewMargin = thermal.tj - tDew;
+
+  // 1. Environmental Stress Index (0-100%)
+  const hypobaricPen = Math.min(100, Math.max(0, ((101.325 - pKpa) / 101.325) * 100));
+  const coldPen = Math.min(100, Math.max(0, ((25 - STATE.temp) / 65) * 100));
+  const dewPen = Math.min(100, Math.max(0, ((10 - dewMargin) / 10) * 100));
+  const esi = (0.40 * hypobaricPen + 0.45 * coldPen + 0.15 * dewPen);
+
+  const esiEl = document.getElementById('ds-esi-val');
+  const esiSub = document.getElementById('ds-esi-sub');
+  if (esiEl) esiEl.innerText = `${esi.toFixed(1)}%`;
+  if (esiSub) {
+    esiSub.innerText = esi > 75 ? 'SEVERE HYPOBARIC' : (esi > 50 ? 'MODERATE STRESS' : 'MILD / SEA-LEVEL');
+  }
+
+  // 2. Battery Degradation Risk & Usable Capacity
+  const degradEl = document.getElementById('ds-degrad-val');
+  const degradSub = document.getElementById('ds-degrad-sub');
+  const usableEl = document.getElementById('ds-usable-val');
+  const usableSub = document.getElementById('ds-usable-sub');
+  const rulEl = document.getElementById('ds-rul-val');
+  const rulSub = document.getElementById('ds-rul-sub');
+
+  if (degradEl) {
+    if (battery.v_term <= 12.0 || STATE.bat.soh < 65) {
+      degradEl.innerText = 'CRITICAL';
+      degradEl.style.color = 'var(--red-600)';
+      if (degradSub) degradSub.innerText = `R_int = ${battery.r_int.toFixed(1)} mΩ (LVC TRIP)`;
+    } else if (battery.r_int > 35) {
+      degradEl.innerText = 'HIGH';
+      degradEl.style.color = 'var(--orange-600)';
+      if (degradSub) degradSub.innerText = `R_int = ${battery.r_int.toFixed(1)} mΩ (COLD-SOAK)`;
+    } else if (battery.r_int > 20) {
+      degradEl.innerText = 'MODERATE';
+      degradEl.style.color = 'var(--yellow-600)';
+      if (degradSub) degradSub.innerText = `R_int = ${battery.r_int.toFixed(1)} mΩ`;
+    } else {
+      degradEl.innerText = 'LOW';
+      degradEl.style.color = 'var(--green-600)';
+      if (degradSub) degradSub.innerText = `R_int = ${battery.r_int.toFixed(1)} mΩ`;
+    }
+  }
+
+  if (usableEl) {
+    usableEl.innerText = `${battery.usableCapAh.toFixed(2)} Ah`;
+    usableEl.style.color = battery.usableCapAh < 2.0 ? 'var(--red-600)' : 'var(--green-600)';
+  }
+  if (usableSub) {
+    usableSub.innerText = `${battery.capFactor.toFixed(1)}% Retention (SOH: ${STATE.bat.soh}%)`;
+  }
+
+  if (rulEl) {
+    rulEl.innerText = `${battery.runtimeMin.toFixed(1)} min`;
+    rulEl.style.color = battery.runtimeMin <= 2.0 ? 'var(--red-600)' : 'var(--green-600)';
+  }
+  if (rulSub) {
+    rulSub.innerText = `V_term: ${battery.v_term.toFixed(2)}V (${battery.v_term <= 12.0 ? 'LVC CUTOFF TRIP' : '>12V Safe'})`;
+  }
+
+  // 3. Equipment Reliability Score (0-100%)
+  const thermScore = Math.max(0, Math.min(100, ((85 - thermal.tj) / (85 - 20)) * 100));
+  const dielScore = STATE.cfg.conformalCoating ? 98.0 : Math.max(15, (pKpa / 101.325) * 100);
+  const pressScore = STATE.cfg.goreVent ? 99.0 : Math.max(10, 100 - (101.325 - pKpa) * 1.5);
+  const equipScore = (0.50 * thermScore + 0.25 * dielScore + 0.25 * pressScore);
+
+  const relVal = document.getElementById('ds-rel-score-val');
+  const relBar = document.getElementById('ds-rel-score-bar');
+  if (relVal) {
+    const rating = equipScore > 85 ? 'EXCELLENT' : (equipScore > 65 ? 'GOOD' : (equipScore > 40 ? 'DERATED' : 'CRITICAL'));
+    relVal.innerText = `${equipScore.toFixed(1)}% (${rating})`;
+  }
+  if (relBar) {
+    relBar.style.width = `${equipScore.toFixed(1)}%`;
+    relBar.style.background = equipScore > 75 ? '#10b981' : (equipScore > 50 ? '#f59e0b' : '#ef4444');
+  }
+
+  // 4. Overall Mission Risk Level Badge
+  const riskBadge = document.getElementById('ds-risk-badge');
+  if (riskBadge) {
+    if (battery.v_term <= 12.0 || STATE.bat.soh < 65 || thermal.tj >= 85) {
+      riskBadge.className = 'dec-badge replace';
+      riskBadge.innerText = 'CRITICAL MISSION RISK';
+    } else if (thermal.tj >= 68 || esi >= 75 || battery.r_int > 40) {
+      riskBadge.className = 'dec-badge reduceload';
+      riskBadge.innerText = 'HIGH MISSION RISK';
+    } else if (battery.coreTemp < 10 || esi >= 50) {
+      riskBadge.className = 'dec-badge preheat';
+      riskBadge.innerText = 'MODERATE RISK (PREHEAT REQ.)';
+    } else {
+      riskBadge.className = 'dec-badge continue';
+      riskBadge.innerText = 'LOW MISSION RISK (NOMINAL)';
+    }
+  }
+
+  // 5. THE DECISION ENGINE (CONTINUE / PREHEAT / REDUCE_LOAD / REPLACE)
+  const decCard = document.getElementById('ds-decision-card');
+  const decBadge = document.getElementById('ds-decision-badge');
+  const decTitle = document.getElementById('ds-decision-title');
+  const decDesc = document.getElementById('ds-decision-desc');
+  const decBtn = document.getElementById('ds-decision-btn');
+  const decReasons = document.getElementById('ds-decision-reasons');
+
+  let decision = 'CONTINUE';
+
+  if (STATE.bat.soh < 65 || battery.v_term <= 12.0 || (battery.r_int > 60 && STATE.bat.isPreheated)) {
+    decision = 'REPLACE';
+    if (decCard) decCard.className = 'dd-decision-card dec-replace';
+    if (decBadge) { decBadge.className = 'dec-badge replace'; decBadge.innerText = 'CRITICAL DISPATCH DECISION'; }
+    if (decTitle) decTitle.innerText = 'DECISION: REPLACE BATTERY MODULE';
+    if (decDesc) {
+      decDesc.innerText = `Severe electrochemical degradation (SOH: ${STATE.bat.soh}%) or terminal voltage collapse (V_term = ${battery.v_term.toFixed(2)}V). Battery pack cannot deliver required cruise current (${STATE.bat.loadI.toFixed(1)}A) without fatal mid-air brownout. Abort launch and replace battery module.`;
+    }
+    if (decBtn) {
+      decBtn.className = 'dec-action-btn replace';
+      decBtn.innerText = '⚠ ENACT: LOCKOUT & DISPATCH BATTERY REPLACEMENT';
+    }
+    if (decReasons) {
+      decReasons.innerHTML = `
+        <li style="color:var(--red-600); font-weight:700;">Battery SOH (${STATE.bat.soh}%) below safe 65% minimum airworthiness limit.</li>
+        <li style="color:var(--red-600); font-weight:700;">Terminal Voltage (${battery.v_term.toFixed(2)}V) hits 12.0V Low-Voltage Cutoff floor.</li>
+        <li>Unusable for flight: High brownout risk upon motor/radar throttle.</li>
+      `;
+    }
+  } else if (thermal.tj >= 68.0 || (battery.v_term < 12.8 && battery.v_term > 12.0 && STATE.bat.isPreheated)) {
+    decision = 'REDUCE_LOAD';
+    if (decCard) decCard.className = 'dd-decision-card dec-reduceload';
+    if (decBadge) { decBadge.className = 'dec-badge reduceload'; decBadge.innerText = 'OPERATIONAL OVERLOAD DECISION'; }
+    if (decTitle) decTitle.innerText = 'DECISION: REDUCE ELECTRICAL LOAD';
+    if (decDesc) {
+      decDesc.innerText = `Hypbaric convective cooling penalty causing semiconductor junction hotspot (Tj = ${thermal.tj.toFixed(1)}°C ≥ 68°C) or heavy current draw (${STATE.bat.loadI.toFixed(1)}A) depressing terminal voltage. Shed auxiliary sensors and derate compute SoC from ${STATE.power.toFixed(0)}W to ${(STATE.power*0.5).toFixed(0)}W to sustain thermal headroom.`;
+    }
+    if (decBtn) {
+      decBtn.className = 'dec-action-btn reduceload';
+      decBtn.innerText = '🟠 ENACT: DERATE TO 50% POWER & SHED AUX LOADS';
+    }
+    if (decReasons) {
+      decReasons.innerHTML = `
+        <li style="color:var(--orange-600); font-weight:700;">Hotspot Temperature (${thermal.tj.toFixed(1)}°C) exceeds 68.0°C Derate threshold.</li>
+        <li>Rarefied air density (ρ = ${thermal.rho.toFixed(3)} kg/m³) provides insufficient natural/fan cooling.</li>
+        <li>50% load shedding drops junction rise by ~12.5°C and extends runtime by +55%.</li>
+      `;
+    }
+  } else if (!STATE.bat.isPreheated && STATE.temp < 10.0) {
+    decision = 'PREHEAT';
+    if (decCard) decCard.className = 'dd-decision-card dec-preheat';
+    if (decBadge) { decBadge.className = 'dec-badge preheat'; decBadge.innerText = 'THERMAL CONDITIONING REQUIRED'; }
+    if (decTitle) decTitle.innerText = 'DECISION: PRE-HEAT BATTERY PACK';
+    if (decDesc) {
+      decDesc.innerText = `Sub-zero electrolyte viscosity causes elevated internal impedance (R_int = ${battery.r_int.toFixed(1)} mΩ). Launching without pre-heating will trip premature Low-Voltage Cutoff within 1.8 minutes. Engage Kapton polyimide pre-heaters to reach +12°C before high-power takeoff.`;
+    }
+    if (decBtn) {
+      decBtn.className = 'dec-action-btn preheat';
+      decBtn.innerText = '▶ ENACT: ENGAGE KAPTON PRE-HEATING (12W)';
+    }
+    if (decReasons) {
+      decReasons.innerHTML = `
+        <li style="color:var(--yellow-600); font-weight:700;">Electrolyte cold-soak (-25°C) increases internal resistance 4.8×.</li>
+        <li>Cold discharge trips premature LVC cutoff (${battery.runtimeMin.toFixed(1)} min runtime vs 21.4 min nominal).</li>
+        <li>Sensible Joulean pre-heating restores full 85%+ usable capacity.</li>
+      `;
+    }
+  } else {
+    decision = 'CONTINUE';
+    if (decCard) decCard.className = 'dd-decision-card dec-continue';
+    if (decBadge) { decBadge.className = 'dec-badge continue'; decBadge.innerText = 'NOMINAL MISSION DISPATCH'; }
+    if (decTitle) decTitle.innerText = 'DECISION: CONTINUE MISSION';
+    if (decDesc) {
+      decDesc.innerText = `All environmental margins, thermal headroom (Tj = ${thermal.tj.toFixed(1)}°C), and battery terminal voltage (${battery.v_term.toFixed(2)}V) exceed safety thresholds. Nominal flight parameters sustained. Ready for mission sortie.`;
+    }
+    if (decBtn) {
+      decBtn.className = 'dec-action-btn continue';
+      decBtn.innerText = '✓ CONFIRM: CONTINUE NOMINAL MISSION PROFILE';
+    }
+    if (decReasons) {
+      decReasons.innerHTML = `
+        <li style="color:var(--green-600); font-weight:700;">Silicon Hotspot (${thermal.tj.toFixed(1)}°C) within safe margin (&lt; 68°C).</li>
+        <li style="color:var(--green-600); font-weight:700;">Terminal Voltage (${battery.v_term.toFixed(2)}V) well above 12.0V LVC floor.</li>
+        <li>Battery core stabilized at +12°C with full ${battery.usableCapAh.toFixed(2)} Ah usable capacity.</li>
+      `;
+    }
+  }
+
+  STATE.activeDecision = decision;
+}
+
+function executeDecisionAction() {
+  const d = STATE.activeDecision || 'CONTINUE';
+  if (d === 'PREHEAT') {
+    STATE.bat.isPreheated = true;
+    STATE.guard.heaterDuty = '100%';
+    const btn = document.getElementById('ds-preheat-btn');
+    const txt = document.getElementById('ds-preheat-val');
+    if (txt) { txt.innerText = 'ACTIVE (+12°C)'; txt.style.color = 'var(--green-600)'; }
+    if (btn) { btn.innerText = 'TOGGLE PRE-HEATER (CURRENT: ACTIVE)'; btn.className = 'dec-action-btn continue'; }
+    logGuardEvent('[DECISION ENACTED]: Kapton polyimide pre-heaters activated at 100% duty cycle. Battery core warming to +12°C.');
+    updateAllEngines();
+    renderDecisionPrognosticChart();
+  } else if (d === 'REDUCE_LOAD') {
+    STATE.power = Math.max(5.0, STATE.power * 0.5);
+    const pSlider = document.getElementById('ds-payload-slider');
+    if (pSlider) pSlider.value = STATE.power;
+    const pVal = document.getElementById('ds-payload-val');
+    if (pVal) pVal.innerText = `${STATE.power.toFixed(1)} W`;
+    STATE.guard.loadShed = 'SHED_AUX';
+    STATE.guard.fanPwm = 100;
+    logGuardEvent(`[DECISION ENACTED]: Load reduced to ${STATE.power.toFixed(1)}W. Auxiliary sensors shed. Fan set to 100% PWM.`);
+    updateAllEngines();
+    renderDecisionPrognosticChart();
+  } else if (d === 'REPLACE') {
+    STATE.guard.state = 'LOCKOUT';
+    STATE.guard.loadShed = 'ISOLATED';
+    STATE.guard.chargeLock = true;
+    logGuardEvent('[DECISION ENACTED]: Battery Replacement Lockout engaged. System isolated. Ground dispatch alert triggered.');
+    updateAllEngines();
+    alert('CRITICAL SAFETY INTERLOCK:\nBattery Replacement Required! The module has been placed into LOCKOUT to prevent mid-air brownout.');
+  } else {
+    logGuardEvent('[DECISION CONFIRMED]: Flight operations nominal. All margins verified.');
+    alert('MISSION CONFIRMATION:\nAll flight parameters and safety margins are NOMINAL. System cleared for sortie.');
+  }
+}
+
+function renderDecisionPrognosticChart() {
+  const temps = [-40, -35, -30, -25, -20, -10, 0, 10, 20, 30];
+  const unprotRetention = temps.map(t => {
+    if (t >= 0) return (1.0 - 0.003 * (25 - t)) * 100;
+    return Math.max(8, (1.0 - 0.075 - 0.018 * Math.abs(t)) * 100);
+  });
+  const protRetention = temps.map(t => {
+    // With aerogel + heater (+12°C core)
+    return (1.0 - 0.003 * (25 - 12)) * 100; // ~96.1%
+  });
+
+  initChart('ds-prognostic-chart', {
+    type: 'line',
+    data: {
+      labels: temps.map(t => `${t}°C`),
+      datasets: [
+        {
+          label: 'Unprotected Cold-Soak Capacity (%)',
+          data: unprotRetention,
+          borderColor: '#c0312b',
+          borderWidth: 2,
+          borderDash: [4, 4],
+          tension: 0.3,
+          pointRadius: 2,
+        },
+        {
+          label: 'HIMVAJRA Preheated & Aerogel Pack (%)',
+          data: protRetention,
+          borderColor: '#10b981',
+          borderWidth: 2.5,
+          tension: 0.1,
+          pointRadius: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 9.5 } } },
+      },
+      scales: {
+        y: { min: 0, max: 105, title: { display: true, text: 'Usable Capacity (%)', font: { size: 9 } } },
+        x: { title: { display: true, text: 'Ambient Temperature', font: { size: 9 } } },
+      },
+    },
+  });
 }
 
 /* ─── APPLY ACTUATORS ─── */
@@ -1264,12 +1640,29 @@ const CHARTS = {};
 function initChart(id, config) {
   const canvas = document.getElementById(id);
   if (!canvas) return null;
-  if (CHARTS[id]) CHARTS[id].destroy();
+  if (CHARTS[id]) {
+    try {
+      CHARTS[id].destroy();
+    } catch (e) {
+      console.warn('Error destroying chart', id, e);
+    }
+    delete CHARTS[id];
+  }
+
+  // Enforce robust responsive & bound constraints to prevent infinite elongation
+  config.options = config.options || {};
+  config.options.responsive = true;
+  config.options.maintainAspectRatio = false;
+  config.options.resizeDelay = 150;
+  config.options.animation = config.options.animation !== undefined ? config.options.animation : { duration: 300 };
+
   CHARTS[id] = new Chart(canvas, config);
   return CHARTS[id];
 }
 
 function updateOverviewCharts() {
+  renderDecisionPrognosticChart();
+
   const altitudes = [0, 1000, 2000, 3000, 4000, 5000, 5500, 6000];
   const baseTjs = altitudes.map(a => PHY.thermalModel(STATE.power, STATE.temp, a, STATE.coolingMode, { vaporChamber: false }).tj_baseline);
   const protTjs = altitudes.map(a => PHY.thermalModel(STATE.power, STATE.temp, a, STATE.coolingMode, { vaporChamber: true }).tj);
@@ -1287,8 +1680,8 @@ function updateOverviewCharts() {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        y: { title: { display: true, text: 'Junction Temp (°C)' } },
-        x: { title: { display: true, text: 'Altitude AMSL' } },
+        y: { title: { display: true, text: 'Junction Temp (°C)', font: { size: 9.5 } } },
+        x: { title: { display: true, text: 'Altitude AMSL', font: { size: 9.5 } } },
       },
     },
   });

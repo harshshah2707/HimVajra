@@ -285,6 +285,211 @@
           </div>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════════
+             DECISION-SUPPORT DASHBOARD: INPUT → PREDICT → DISPLAY → DECIDE
+             ══════════════════════════════════════════════════════════ -->
+        <div class="decision-dashboard">
+          <div class="dd-header">
+            <div>
+              <div class="dd-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                PREDICTIVE DECISION-SUPPORT DASHBOARD
+                <span class="sci-badge simulated" style="margin-left:6px;">PROGNOSTIC FSM DECISION ENGINE</span>
+              </div>
+              <div class="dd-sub">First-Principles Physics & Electrochemical Predictive Model · Dynamic Mission Reliability & Dispatch Action</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span id="ds-risk-badge" class="dec-badge continue">LOW MISSION RISK</span>
+            </div>
+          </div>
+
+          <div class="dd-body">
+            <!-- COLUMN 1: INPUTS -->
+            <div class="dd-col-inputs">
+              <div class="dd-section-title">
+                <span>1. OPERATIONAL INPUTS</span>
+                <span class="mono" style="font-size:9px; color:var(--orange-500);">CONFIG</span>
+              </div>
+
+              <!-- Altitude Input -->
+              <div class="dd-input-row">
+                <div class="dd-input-label">
+                  <span>ALTITUDE</span>
+                  <span class="dd-input-val" id="ds-alt-val">5,500 m</span>
+                </div>
+                <input type="range" class="dd-slider" id="ds-alt-slider" min="0" max="6000" step="100" value="5500" oninput="onDecisionInputChanged()">
+              </div>
+
+              <!-- Ambient Temp Input -->
+              <div class="dd-input-row">
+                <div class="dd-input-label">
+                  <span>AMBIENT TEMP</span>
+                  <span class="dd-input-val" id="ds-temp-val">-25.0 °C</span>
+                </div>
+                <input type="range" class="dd-slider" id="ds-temp-slider" min="-40" max="30" step="1" value="-25" oninput="onDecisionInputChanged()">
+              </div>
+
+              <!-- Pressure (Calculated from Altitude) -->
+              <div class="dd-input-row">
+                <div class="dd-input-label">
+                  <span>PRESSURE (ISA)</span>
+                  <span class="dd-input-val mono" id="ds-press-val">50.5 kPa</span>
+                </div>
+                <div style="font-size:9px; color:var(--text-muted);">P = 101.325 · (1 - 0.0065·h/288.15)^5.256</div>
+              </div>
+
+              <!-- Battery SOH Input -->
+              <div class="dd-input-row">
+                <div class="dd-input-label">
+                  <span>BATTERY SOH</span>
+                  <span class="dd-input-val" id="ds-soh-val">90 %</span>
+                </div>
+                <input type="range" class="dd-slider" id="ds-soh-slider" min="50" max="100" step="1" value="90" oninput="onDecisionInputChanged()">
+              </div>
+
+              <!-- Current / Load Input -->
+              <div class="dd-input-row">
+                <div class="dd-input-label">
+                  <span>CRUISE LOAD CURRENT</span>
+                  <span class="dd-input-val" id="ds-curr-val">12.5 A</span>
+                </div>
+                <input type="range" class="dd-slider" id="ds-curr-slider" min="2" max="35" step="0.5" value="12.5" oninput="onDecisionInputChanged()">
+              </div>
+
+              <!-- Payload Power Input -->
+              <div class="dd-input-row">
+                <div class="dd-input-label">
+                  <span>PAYLOAD COMPUTE POWER</span>
+                  <span class="dd-input-val" id="ds-payload-val">15.0 W</span>
+                </div>
+                <input type="range" class="dd-slider" id="ds-payload-slider" min="5" max="60" step="1" value="15" oninput="onDecisionInputChanged()">
+              </div>
+
+              <!-- Pre-heat Toggle -->
+              <div class="dd-input-row" style="margin-top:4px;">
+                <div class="dd-input-label">
+                  <span>BATTERY PRE-HEATING</span>
+                  <span class="dd-input-val" id="ds-preheat-val">ACTIVE (ON)</span>
+                </div>
+                <button id="ds-preheat-btn" class="dec-action-btn preheat" style="padding:6px; font-size:10px;" onclick="toggleDecisionPreheat()">TOGGLE PRE-HEATER (CURRENT: ACTIVE)</button>
+              </div>
+
+              <!-- Quick Presets -->
+              <div style="margin-top:6px;">
+                <div style="font-size:9px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">MISSION SCENARIO PRESETS:</div>
+                <div class="dd-presets">
+                  <button class="dd-preset-btn" onclick="applyDecisionPreset('ladakh_cruise')">Ladakh Cruise (5.5km)</button>
+                  <button class="dd-preset-btn" onclick="applyDecisionPreset('cold_start')">Cold Start (-35°C)</button>
+                  <button class="dd-preset-btn" onclick="applyDecisionPreset('degraded_soh')">Degraded SOH (60%)</button>
+                  <button class="dd-preset-btn" onclick="applyDecisionPreset('high_payload')">Peak Payload (40W)</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUMN 2: CALCULATED PREDICTIONS & GRAPH -->
+            <div class="dd-col-predictions">
+              <!-- Prediction Metrics 4-Box Grid -->
+              <div class="dd-metrics-grid">
+                <div class="dd-metric-card">
+                  <div class="dd-metric-label">ENV. STRESS INDEX</div>
+                  <div class="dd-metric-val orange" id="ds-esi-val">74.8%</div>
+                  <div class="dd-metric-sub" id="ds-esi-sub">SEVERE HYPOBARIC</div>
+                </div>
+                <div class="dd-metric-card">
+                  <div class="dd-metric-label">BATT DEGRADATION</div>
+                  <div class="dd-metric-val" id="ds-degrad-val" style="color:var(--green-600);">LOW</div>
+                  <div class="dd-metric-sub" id="ds-degrad-sub">R_int = 13.2 mΩ</div>
+                </div>
+                <div class="dd-metric-card">
+                  <div class="dd-metric-label">USABLE CAPACITY</div>
+                  <div class="dd-metric-val green" id="ds-usable-val">4.28 Ah</div>
+                  <div class="dd-metric-sub" id="ds-usable-sub">85.6% Retention</div>
+                </div>
+                <div class="dd-metric-card">
+                  <div class="dd-metric-label">PREDICTED RUL / RUNTIME</div>
+                  <div class="dd-metric-val green" id="ds-rul-val">20.5 min</div>
+                  <div class="dd-metric-sub" id="ds-rul-sub">V_term: 14.64V (&gt;12V LVC)</div>
+                </div>
+              </div>
+
+              <!-- Prognostic Graph (Fixed Height, Never Elongates) -->
+              <div class="dd-chart-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <span style="font-size:10px; font-weight:700; color:var(--navy-900); text-transform:uppercase;">PREDICTED USABLE CAPACITY vs TEMPERATURE (°C)</span>
+                  <span class="sci-badge calculated" style="font-size:9px;">ARRHENIUS ECM</span>
+                </div>
+                <div class="chart-container" style="height:170px; max-height:180px; width:100%; position:relative; overflow:hidden;">
+                  <canvas id="ds-prognostic-chart"></canvas>
+                </div>
+              </div>
+
+              <!-- Reliability Health Bars -->
+              <div class="dd-status-bar">
+                <div class="dd-bar-label">
+                  <span>EQUIPMENT RELIABILITY SCORE</span>
+                  <span class="mono" id="ds-rel-score-val">92.4% (EXCELLENT)</span>
+                </div>
+                <div class="dd-progress-track">
+                  <div class="dd-progress-fill" id="ds-rel-score-bar" style="width:92.4%; background:#10b981;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUMN 3: THE DECISION RECOMMENDATION ENGINE -->
+            <div class="dd-col-decision">
+              <div class="dd-section-title">
+                <span>3. MODEL ACTION RECOMMENDATION</span>
+                <span class="sci-badge source">DETERMINISTIC FSM</span>
+              </div>
+
+              <!-- Dynamic Decision Action Card -->
+              <div class="dd-decision-card dec-continue" id="ds-decision-card">
+                <div id="ds-decision-badge" class="dec-badge continue">RECOMMENDED ACTION</div>
+                <div class="dec-title" id="ds-decision-title">CONTINUE MISSION</div>
+                <div class="dec-desc" id="ds-decision-desc">
+                  All environmental margins, thermal headroom, and battery voltage levels exceed mission continuity thresholds. Nominal flight parameters sustained.
+                </div>
+
+                <div style="border-top:1px solid rgba(0,0,0,0.06); padding-top:8px; margin-top:2px;">
+                  <div style="font-size:9.5px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">ENGINEERING JUSTIFICATION:</div>
+                  <ul id="ds-decision-reasons" style="margin:0; padding-left:14px; font-size:10px; color:var(--text-mid); line-height:1.4;">
+                    <li>Silicon Hotspot: 43.1°C (&lt; 68°C Derate threshold)</li>
+                    <li>Terminal Voltage: 14.64V (&gt; 12.0V LVC brownout floor)</li>
+                    <li>Battery Core Temp: +12.0°C (Preheated safe regime)</li>
+                  </ul>
+                </div>
+
+                <button class="dec-action-btn continue" id="ds-decision-btn" onclick="executeDecisionAction()">
+                  ENACT ACTION: CONTINUE MISSION
+                </button>
+              </div>
+
+              <!-- Decision Reference Matrix Card -->
+              <div class="panel" style="margin:0; padding:12px; background:#fff; border:1px solid var(--border-light);">
+                <div style="font-size:9.5px; font-weight:700; color:var(--navy-900); margin-bottom:6px;">DECISION CRITERIA MATRIX:</div>
+                <div style="display:flex; flex-direction:column; gap:4px; font-size:9.5px; font-family:var(--mono);">
+                  <div style="display:flex; justify-content:space-between; padding:3px 4px; background:#ecfdf5; border-radius:3px; color:#065f46;">
+                    <span>🟢 CONTINUE</span>
+                    <span>Tj &lt; 68°C · V &gt; 13.5V · SOH &gt; 75%</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:3px 4px; background:#fffbeb; border-radius:3px; color:#92400e;">
+                    <span>🟡 PRE-HEAT</span>
+                    <span>Tbat &lt; 10°C · Cold-Soak LVC Risk</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:3px 4px; background:#fff7ed; border-radius:3px; color:#9a3412;">
+                    <span>🟠 REDUCE LOAD</span>
+                    <span>Tj ≥ 68°C OR 12.0V &lt; V &lt; 12.8V</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:3px 4px; background:#fef2f2; border-radius:3px; color:#991b1b;">
+                    <span>🔴 REPLACE</span>
+                    <span>SOH &lt; 65% OR V ≤ 12.0V Cutoff</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 3-Column Overview Body -->
         <div class="ov-main-row" style="margin-top:14px;">
           <!-- GUARD State & Actuation Panel -->
@@ -311,13 +516,15 @@
             </div>
           </div>
 
-          <!-- Live Chart: Altitude vs Hotspot Temperature -->
+          <!-- Live Chart: Altitude vs Hotspot Temperature (Bounded Container) -->
           <div class="panel chart-panel">
             <div class="panel-header">
               <span>THERMAL PENALTY vs ALTITUDE (BASELINE VS HIMVAJRA)</span>
               <span class="sci-badge calculated">EQUATION: h ∝ ρ^0.8</span>
             </div>
-            <canvas id="ov-thermal-chart" height="210"></canvas>
+            <div class="chart-container" style="height:210px; max-height:220px; width:100%; position:relative; overflow:hidden;">
+              <canvas id="ov-thermal-chart"></canvas>
+            </div>
           </div>
 
           <!-- Physical Inventions Breakdown Panel -->
@@ -407,7 +614,7 @@
 
             <div class="panel" style="background:#fff; border:1px solid var(--border-light); padding:10px;">
               <div style="font-size:10px; font-weight:700; margin-bottom:6px; color:var(--red-600);">HOTSPOT TEMPERATURE RISE TIMELINE</div>
-              <canvas id="comp-base-chart" height="150"></canvas>
+              <div class="chart-container short"><canvas id="comp-base-chart"></canvas></div>
             </div>
           </div>
 
@@ -462,7 +669,7 @@
 
             <div class="panel" style="background:#fff; border:1px solid var(--border-light); padding:10px;">
               <div style="font-size:10px; font-weight:700; margin-bottom:6px; color:var(--green-700);">HOTSPOT TEMPERATURE WITH HIMVAJRA CLAMP</div>
-              <canvas id="comp-prot-chart" height="150"></canvas>
+              <div class="chart-container short"><canvas id="comp-prot-chart"></canvas></div>
             </div>
           </div>
         </div>
@@ -577,7 +784,7 @@
 
             <!-- Altitude vs Atmosphere Curve -->
             <div style="margin-top:14px;">
-              <canvas id="ch-profile-chart" height="160"></canvas>
+              <div class="chart-container short"><canvas id="ch-profile-chart"></canvas></div>
             </div>
           </div>
         </div>
@@ -765,13 +972,13 @@
             </div>
 
             <div style="margin-top:14px;">
-              <canvas id="th-rc-chart" height="170"></canvas>
+              <div class="chart-container"><canvas id="th-rc-chart"></canvas></div>
             </div>
           </div>
 
           <div class="panel">
             <div class="panel-header">JUNCTION TEMPERATURE vs POWER LOAD (AT 54 kPa)</div>
-            <canvas id="th-pwr-chart" height="230"></canvas>
+            <div class="chart-container"><canvas id="th-pwr-chart"></canvas></div>
           </div>
         </div>
       </div>
@@ -794,7 +1001,7 @@
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
           <div class="panel">
             <div class="panel-header">DISCHARGE PROFILE AT -25°C: UNHEATED VS PRE-HEATED</div>
-            <canvas id="bat-discharge-chart" height="220"></canvas>
+            <div class="chart-container"><canvas id="bat-discharge-chart"></canvas></div>
             <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:10px; font-family:var(--mono);">
               <span style="color:var(--red-500);">■ Unheated Pack: Cutoff at 1.8 min (0.37 Ah)</span>
               <span style="color:var(--green-600);">■ HIMVAJRA Preheated: Cutoff at 21.4 min (4.45 Ah)</span>
@@ -803,7 +1010,7 @@
 
           <div class="panel">
             <div class="panel-header">ARRHENIUS INTERNAL RESISTANCE (R_int) SURGE vs TEMP</div>
-            <canvas id="bat-rint-chart" height="220"></canvas>
+            <div class="chart-container"><canvas id="bat-rint-chart"></canvas></div>
             <div style="margin-top:10px; font-size:10px; color:var(--text-mid); font-family:var(--mono);">
               R_int surges from 12 mΩ at +25°C to 108 mΩ at -25°C (9.0× increase). Preheat to +12°C restores R_int to 24 mΩ.
             </div>
@@ -828,7 +1035,7 @@
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
           <div class="panel">
             <div class="panel-header">PASCHEN BREAKDOWN CURVE: VOLTAGE vs (P · d) PRODUCT</div>
-            <canvas id="diel-paschen-chart" height="220"></canvas>
+            <div class="chart-container"><canvas id="diel-paschen-chart"></canvas></div>
             <div style="font-size:10px; color:var(--text-mid); margin-top:8px;">
               At 5,500m (54 kPa), the 1.0mm air breakdown voltage collapses from 4.15 kV to 2.42 kV (-41.7%).
             </div>
@@ -845,7 +1052,7 @@
               </p>
             </div>
             <div style="margin-top:14px;">
-              <canvas id="diel-margin-chart" height="150"></canvas>
+              <div class="chart-container short"><canvas id="diel-margin-chart"></canvas></div>
             </div>
           </div>
         </div>
@@ -887,13 +1094,13 @@
               </div>
             </div>
             <div style="margin-top:14px;">
-              <canvas id="cond-margin-chart" height="160"></canvas>
+              <div class="chart-container short"><canvas id="cond-margin-chart"></canvas></div>
             </div>
           </div>
 
           <div class="panel">
             <div class="panel-header">ENCLOSURE DIFFERENTIAL PRESSURE (ΔP) vs VENTING</div>
-            <canvas id="press-dp-chart" height="220"></canvas>
+            <div class="chart-container"><canvas id="press-dp-chart"></canvas></div>
             <div style="font-size:10px; color:var(--text-mid); margin-top:8px;">
               Without vent, 47.3 kPa overpressure exerts 50 kgf force on enclosure lid. Gore vent equalizes ΔP in &lt; 3.5 minutes.
             </div>
@@ -1027,7 +1234,7 @@
               <div><strong>Pass Criterion:</strong> <span id="vlab-pass-crit" class="mono orange">HIMVAJRA Hotspot &lt; 50°C | Baseline Hotspot &gt; 65°C</span></div>
             </div>
 
-            <canvas id="vlab-chart" height="190"></canvas>
+            <div class="chart-container"><canvas id="vlab-chart"></canvas></div>
 
             <div style="margin-top:12px; padding:10px; background:var(--surface-gray-50); border:1px solid var(--border-light); border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
               <div>
