@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.py
+*.joblib
+*.csv
+.git
+.github
+*.pptx
+*.pdf
+*.txt
+*.md
